@@ -15,9 +15,20 @@ export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
   const [onboardingIndex, setOnboardingIndex] = useState(0);
   const [email, setEmail] = useState('');
-  const [selectedCategories, setSelectedCategories] = useState(['Property', 'Bankruptcy']);
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedServices, setSelectedServices] = useState([]);
+  const [userRole, setUserRole] = useState('USER'); // USER, LAWYER, LAW_FIRM
+  const [lawFirmForm, setLawFirmForm] = useState({
+    organizationName: '',
+    phone: '',
+    email: '',
+    address: '',
+    website: '',
+    description: ''
+  });
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllLawyers, setShowAllLawyers] = useState(false);
+  const [showSeeAllCategoriesSelection, setShowSeeAllCategoriesSelection] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState('Property');
   const [showCategoryConfirmation, setShowCategoryConfirmation] = useState(false);
   const [newSelectedCategory, setNewSelectedCategory] = useState('');
@@ -42,6 +53,59 @@ export default function App() {
   const [userBookings, setUserBookings] = useState([]);
   const [showBookingDetails, setShowBookingDetails] = useState(false);
   const [selectedBooking, setSelectedBooking] = useState(null);
+  const [showRatingPage, setShowRatingPage] = useState(false);
+  const [userRating, setUserRating] = useState(0);
+  const [userReview, setUserReview] = useState('');
+  const [showProfilePage, setShowProfilePage] = useState(false);
+  const [showEditProfile, setShowEditProfile] = useState(false);
+  const [showLogoutConfirmation, setShowLogoutConfirmation] = useState(false);
+  const [userProfile, setUserProfile] = useState({
+    fullName: 'Katie Syrus',
+    email: 'katies@gmail.com',
+    phone: '+44 9005628520',
+    dateOfBirth: '15/01/1990',
+    streetAddress: '123 Main Street',
+    city: 'New York',
+    state: 'NY',
+    zipCode: '10001',
+    profilePicture: null
+  });
+  const [editedProfile, setEditedProfile] = useState(userProfile);
+  const [hasProfileChanges, setHasProfileChanges] = useState(false);
+  const [showCustomModal, setShowCustomModal] = useState(false);
+  const [modalConfig, setModalConfig] = useState({
+    type: 'success', // 'success', 'warning', 'confirm'
+    title: '',
+    message: '',
+    buttons: []
+  });
+  const [showRescheduleBooking, setShowRescheduleBooking] = useState(false);
+  const [rescheduleBooking, setRescheduleBooking] = useState(null);
+  const [rescheduleSelectedDate, setRescheduleSelectedDate] = useState(null);
+  const [rescheduleSelectedTimeSlot, setRescheduleSelectedTimeSlot] = useState('');
+  const [showRegister, setShowRegister] = useState(false);
+  const [registerForm, setRegisterForm] = useState({
+    firstName: '',
+    lastName: '',
+    phone: '',
+    email: '',
+    password: '',
+    confirmPassword: ''
+  });
+  const [lawyerRatings, setLawyerRatings] = useState({
+    'Mathew Bairstow': { rating: 4.4, reviewCount: 127 },
+    'Lisa Wales': { rating: 4.8, reviewCount: 95 },
+    'Chris Young': { rating: 4.7, reviewCount: 203 },
+    'Krisy Yolker': { rating: 4.9, reviewCount: 156 }
+  });
+  const [showServicesPage, setShowServicesPage] = useState(false);
+  const [selectedService, setSelectedService] = useState('');
+  const [showViewAllFirms, setShowViewAllFirms] = useState(false);
+  const [showLawFirmDetails, setShowLawFirmDetails] = useState(false);
+  const [selectedLawFirm, setSelectedLawFirm] = useState(null);
+  const [showViewAllLawyers, setShowViewAllLawyers] = useState(false);
+  const [homeSliderMode, setHomeSliderMode] = useState('lawyers'); // 'lawyers' or 'lawfirms'
+  const [showAllHomeLawFirms, setShowAllHomeLawFirms] = useState(false);
 
   // Auto-transition from splash screen
   useEffect(() => {
@@ -51,16 +115,30 @@ export default function App() {
     return () => clearTimeout(timer);
   }, []);
 
-  // Toggle category selection
-  const toggleCategory = (categoryName) => {
-    setSelectedCategories(prev => {
-      if (prev.includes(categoryName)) {
-        return prev.filter(cat => cat !== categoryName);
-      } else {
-        return [...prev, categoryName];
-      }
+  // Sync edited profile when user profile changes
+  useEffect(() => {
+    setEditedProfile(userProfile);
+    setHasProfileChanges(false);
+  }, [userProfile]);
+
+  // Auto-fill law firm form when law firm registration screen is shown
+  useEffect(() => {
+    if (currentScreen === 'lawFirmRegistration') {
+      autoFillLawFirmForm();
+    }
+  }, [currentScreen]);
+
+  // Custom Modal Helper Function
+  const showCustomAlert = (type, title, message, buttons) => {
+    setModalConfig({
+      type,
+      title,
+      message,
+      buttons
     });
+    setShowCustomModal(true);
   };
+
 
   const handleSeeAllCategories = () => {
     setShowAllCategories(true);
@@ -85,13 +163,13 @@ export default function App() {
     setShowCategoryConfirmation(false);
   };
 
-  const handleLawyerSelect = (lawyerName, specialty, rating, avatar) => {
+  const handleLawyerSelect = (lawyerName, specialty, rating, avatar, profileImage) => {
     const lawyerData = {
       name: lawyerName,
       specialty: specialty,
       rating: rating,
       avatar: avatar,
-      profileImage: null, // No uploaded profile image, will show vector icon
+      profileImage: profileImage, // Use the actual profile image
       distance: '1.0 km',
       hourlyRate: '$15/hr',
       cases: '3.6k Cases',
@@ -104,7 +182,7 @@ export default function App() {
   };
 
   const handleLawyerCardClick = (lawyer) => {
-    handleLawyerSelect(lawyer.name, lawyer.specialty, lawyer.rating, lawyer.avatar);
+    handleLawyerSelect(lawyer.name, lawyer.specialty, lawyer.rating, lawyer.avatar, lawyer.profileImage);
   };
 
   const handleCategoryClick = (categoryName) => {
@@ -112,63 +190,10 @@ export default function App() {
   };
 
   const handleServiceSelect = (serviceName) => {
-    Alert.alert('Service Selected', `You selected: ${serviceName}\nCategory: ${selectedCategory}`, [{ text: 'OK' }]);
+    setSelectedService(serviceName);
+    setShowServicesPage(true);
   };
 
-  // Service data based on selected category
-  const getServicesForCategory = (category) => {
-    const services = {
-      'Property': [
-        { name: 'Property Purchase', icon: 'HOUSE', description: 'Buy/Sell Property' },
-        { name: 'Lease Agreement', icon: 'DOC', description: 'Rental Contracts' },
-        { name: 'Property Disputes', icon: 'SCALE', description: 'Property Conflicts' },
-        { name: 'Estate Planning', icon: 'WILL', description: 'Will & Trust' },
-        { name: 'Property Tax', icon: 'TAX', description: 'Tax Issues' },
-        { name: 'Zoning Issues', icon: 'ZONE', description: 'Land Use' }
-      ],
-      'Criminal': [
-        { name: 'DUI Defense', icon: 'CAR', description: 'Drunk Driving' },
-        { name: 'Theft Cases', icon: 'LOCK', description: 'Theft Defense' },
-        { name: 'Assault Defense', icon: 'SHIELD', description: 'Violence Cases' },
-        { name: 'Drug Offenses', icon: 'PILL', description: 'Drug Crimes' },
-        { name: 'Traffic Violations', icon: 'TICKET', description: 'Traffic Tickets' },
-        { name: 'White Collar Crime', icon: 'BRIEFCASE', description: 'Financial Crimes' }
-      ],
-      'Tax': [
-        { name: 'Tax Filing', icon: 'FILE', description: 'Tax Returns' },
-        { name: 'Tax Disputes', icon: 'SCALE', description: 'IRS Issues' },
-        { name: 'Business Tax', icon: 'BUILDING', description: 'Corporate Tax' },
-        { name: 'Estate Tax', icon: 'WILL', description: 'Inheritance Tax' },
-        { name: 'Tax Planning', icon: 'CHART', description: 'Tax Strategy' },
-        { name: 'Audit Defense', icon: 'SEARCH', description: 'IRS Audits' }
-      ],
-      'Family': [
-        { name: 'Divorce', icon: 'HEART', description: 'Marriage Dissolution' },
-        { name: 'Child Custody', icon: 'CHILD', description: 'Custody Rights' },
-        { name: 'Adoption', icon: 'FAMILY', description: 'Adoption Process' },
-        { name: 'Alimony', icon: 'MONEY', description: 'Spousal Support' },
-        { name: 'Prenuptial Agreement', icon: 'RING', description: 'Pre-marriage Contract' },
-        { name: 'Domestic Violence', icon: 'SHIELD', description: 'Protection Orders' }
-      ],
-      'Business': [
-        { name: 'Business Formation', icon: 'BUILDING', description: 'Start a Business' },
-        { name: 'Contract Review', icon: 'DOC', description: 'Business Contracts' },
-        { name: 'Employment Law', icon: 'PEOPLE', description: 'HR Issues' },
-        { name: 'Intellectual Property', icon: 'LIGHTBULB', description: 'IP Protection' },
-        { name: 'Mergers & Acquisitions', icon: 'HANDSHAKE', description: 'Business Sales' },
-        { name: 'Corporate Compliance', icon: 'CHART', description: 'Legal Compliance' }
-      ],
-      'Personal Injury': [
-        { name: 'Car Accidents', icon: 'CAR', description: 'Auto Accidents' },
-        { name: 'Medical Malpractice', icon: 'MEDICAL', description: 'Medical Errors' },
-        { name: 'Workplace Injuries', icon: 'TOOLS', description: 'Workers Comp' },
-        { name: 'Slip & Fall', icon: 'WARNING', description: 'Premises Liability' },
-        { name: 'Product Liability', icon: 'PACKAGE', description: 'Defective Products' },
-        { name: 'Wrongful Death', icon: 'CROSS', description: 'Fatal Accidents' }
-      ]
-    };
-    return services[category] || services['Property'];
-  };
 
   // Professional Icon Component - Vector Icons System
   const ProfessionalIcon = ({ type, size = 24, color = '#2E4A6B' }) => {
@@ -221,23 +246,45 @@ export default function App() {
       'CALL': { family: Ionicons, name: 'call-outline' },
       'MESSAGE': { family: Ionicons, name: 'chatbubble-outline' },
       'EMAIL': { family: Ionicons, name: 'mail-outline' },
+      'MAIL': { family: Ionicons, name: 'mail-outline' },
       'LAWYER': { family: Ionicons, name: 'person-outline' },
       'CLOCK': { family: Ionicons, name: 'time-outline' },
       'LOCK': { family: Ionicons, name: 'lock-closed-outline' },
       'SHIELD': { family: Ionicons, name: 'shield-outline' },
+      'LOGOUT': { family: Ionicons, name: 'log-out-outline' },
+      'EDIT': { family: Ionicons, name: 'create-outline' },
+      'USER_EDIT': { family: Ionicons, name: 'person-add-outline' },
+      'HELP': { family: Ionicons, name: 'help-circle-outline' },
+      'GOOGLE': { family: Ionicons, name: 'logo-google' },
       'PILL': { family: MaterialCommunityIcons, name: 'pill' },
       'TICKET': { family: MaterialCommunityIcons, name: 'ticket-outline' },
       'CHILD': { family: MaterialCommunityIcons, name: 'baby-face-outline' },
       'ZONE': { family: MaterialCommunityIcons, name: 'map-marker-outline' },
       'PATENT': { family: Ionicons, name: 'bulb-outline' },
       'ARROW_LEFT': { family: Ionicons, name: 'arrow-back-outline' },
+      'ARROW_RIGHT': { family: Ionicons, name: 'arrow-forward-outline' },
       'CHEVRON_DOWN': { family: Ionicons, name: 'chevron-down-outline' },
       'CHEVRON_LEFT': { family: Ionicons, name: 'chevron-back-outline' },
       'CHEVRON_RIGHT': { family: Ionicons, name: 'chevron-forward-outline' },
       'DOLLAR': { family: Ionicons, name: 'cash-outline' },
       'PAPERCLIP': { family: Ionicons, name: 'attach-outline' },
       'CHECKMARK': { family: Ionicons, name: 'checkmark-circle' },
-      'CALENDAR': { family: Ionicons, name: 'calendar-outline' }
+      'CALENDAR': { family: Ionicons, name: 'calendar-outline' },
+      'CLOSE': { family: Ionicons, name: 'close-outline' },
+      'STAR': { family: Ionicons, name: 'star-outline' },
+      'FITNESS': { family: Ionicons, name: 'fitness-outline' },
+      'BOOK': { family: Ionicons, name: 'book-outline' },
+      
+      // Additional icons for services
+      'CARD': { family: Ionicons, name: 'card-outline' },
+      'FLAG': { family: Ionicons, name: 'flag-outline' },
+      'PROTECTION': { family: Ionicons, name: 'shield-checkmark-outline' },
+      'LICENSE': { family: Ionicons, name: 'id-card-outline' },
+      'TEST': { family: Ionicons, name: 'beaker-outline' },
+      'BREATH': { family: Ionicons, name: 'medical-outline' },
+      'HOME': { family: Ionicons, name: 'home-outline' },
+      'MAP': { family: Ionicons, name: 'map-outline' },
+      'COURT': { family: Ionicons, name: 'library-outline' }
     };
 
     const config = iconConfig[type];
@@ -263,54 +310,134 @@ export default function App() {
     </View>
   );
 
+  // All available images for random selection
+  const allImages = [
+    require('./assets/images/numbered/1.jpg'),
+    require('./assets/images/numbered/2.jpg'),
+    require('./assets/images/numbered/3.jpg'),
+    require('./assets/images/numbered/4.jpg'),
+    require('./assets/images/numbered/5.jpg'),
+    require('./assets/images/numbered/6.png'),
+    require('./assets/images/numbered/7.png'),
+    require('./assets/images/numbered/8.png'),
+    require('./assets/images/numbered/9.png'),
+    require('./assets/images/numbered/10.png')
+  ];
+
+  // Shuffle function to randomize images
+  const shuffleArray = (array) => {
+    const shuffled = [...array];
+    for (let i = shuffled.length - 1; i > 0; i--) {
+      const j = Math.floor(Math.random() * (i + 1));
+      [shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]];
+    }
+    return shuffled;
+  };
+
+  // Get 4 random images for the diamonds
+  const randomImages = shuffleArray(allImages).slice(0, 4);
+
   const onboardingData = [
     {
-      title: "Best Legal Expertise",
-      subtitle: "Any city. Any Court. Any time",
-      image: "LAWYER"
+      title: "Expert Legal Consultation",
+      subtitle: "Connect with qualified lawyers and get professional legal advice for all your legal matters.",
+      image: randomImages[0]
     },
     {
-      title: "24/7 Legal Support",
-      subtitle: "Get help whenever you need it",
-      image: "CLOCK"
+      title: "Professional Legal Services", 
+      subtitle: "Access experienced attorneys specialized in various legal fields to handle your case with expertise.",
+      image: randomImages[1]
     },
     {
-      title: "Trusted by Thousands",
-      subtitle: "Join our community of satisfied clients",
-      image: "STAR"
+      title: "Trusted Legal Solutions",
+      subtitle: "Join thousands of satisfied clients who found the right legal representation through our platform.",
+      image: randomImages[2]
     }
   ];
 
   const renderOnboardingScreen = () => (
     <View style={styles.onboardingContainer}>
-      <StatusBar style="light" />
+      <StatusBar style="dark" />
       <TouchableOpacity style={styles.skipButton} onPress={() => setCurrentScreen('login')}>
-        <Text style={styles.skipText}>SKIP</Text>
+        <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
       
       <View style={styles.onboardingContent}>
-        <View style={styles.imageContainer}>
-          <ProfessionalIcon type={onboardingData[onboardingIndex].image} size={80} color="#ffffff" />
+        {/* Diamond Image Layout */}
+        <View style={styles.diamondImageContainer}>
+          <View style={styles.diamondGrid}>
+            {/* Top Diamond */}
+            <View style={[styles.diamondCard, styles.topDiamond]}>
+              <Image 
+                source={onboardingData[0].image} 
+                style={styles.diamondImage}
+                resizeMode="cover"
+              />
+            </View>
+            
+            {/* Left Diamond */}
+            <View style={[styles.diamondCard, styles.leftDiamond]}>
+              <Image 
+                source={onboardingData[1].image} 
+                style={styles.diamondImage}
+                resizeMode="cover"
+              />
+            </View>
+            
+            {/* Right Diamond */}
+            <View style={[styles.diamondCard, styles.rightDiamond]}>
+              <Image 
+                source={onboardingData[2].image} 
+                style={styles.diamondImage}
+                resizeMode="cover"
+              />
+            </View>
+            
+            {/* Bottom Diamond */}
+            <View style={[styles.diamondCard, styles.bottomDiamond]}>
+              <Image 
+                source={randomImages[3]} 
+                style={styles.diamondImage}
+                resizeMode="cover"
+              />
+            </View>
+          </View>
         </View>
         
         <View style={styles.onboardingInfo}>
-          <Text style={styles.onboardingTitle}>Best Legal Expertise</Text>
-          <Text style={styles.onboardingSubtitle}>Any city. Any Court. Any time</Text>
+          <Text style={styles.onboardingTitle}>{onboardingData[onboardingIndex].title}</Text>
+          <Text style={styles.onboardingSubtitle}>{onboardingData[onboardingIndex].subtitle}</Text>
           
           <View style={styles.pagination}>
-            <View style={[styles.dot, styles.activeDot]} />
-            <View style={styles.dot} />
-            <View style={styles.dot} />
+            {onboardingData.map((_, index) => (
+              <View 
+                key={index}
+                style={[
+                  styles.dot, 
+                  onboardingIndex === index && styles.activeDot
+                ]} 
+              />
+            ))}
           </View>
         </View>
       </View>
       
+      <View style={styles.onboardingNavigation}>
       <TouchableOpacity 
         style={styles.continueButton} 
-        onPress={() => setCurrentScreen('login')}
-      >
-        <Text style={styles.continueText}>Continue</Text>
+          onPress={() => {
+            if (onboardingIndex < onboardingData.length - 1) {
+              setOnboardingIndex(onboardingIndex + 1);
+            } else {
+              setCurrentScreen('login');
+            }
+          }}
+        >
+          <Text style={styles.continueText}>
+            {onboardingIndex < onboardingData.length - 1 ? 'Next' : 'Get Started'}
+          </Text>
       </TouchableOpacity>
+      </View>
     </View>
   );
 
@@ -360,79 +487,1145 @@ export default function App() {
             <Text style={styles.socialBtnText}>G</Text>
           </TouchableOpacity>
         </View>
+
+        <View style={styles.registerSection}>
+          <Text style={styles.registerPrompt}>Don't have an account?</Text>
+          <TouchableOpacity onPress={() => setShowRegister(true)}>
+            <Text style={styles.registerLink}>Register here</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );
 
-  const renderCategoriesScreen = () => (
+  const toggleCategory = (categoryName) => {
+    if (userRole === 'USER') {
+      setSelectedCategories(prev => 
+        prev.includes(categoryName) 
+          ? prev.filter(cat => cat !== categoryName)
+          : [...prev, categoryName]
+      );
+    } else if (userRole === 'LAWYER') {
+      setSelectedServices(prev => 
+        prev.includes(categoryName) 
+          ? prev.filter(service => service !== categoryName)
+          : [...prev, categoryName]
+      );
+    } else if (userRole === 'LAW_FIRM') {
+      // For law firms, selecting a category automatically selects all related services
+      if (selectedCategories.includes(categoryName)) {
+        // Remove category and all its related services
+        setSelectedCategories(prev => prev.filter(cat => cat !== categoryName));
+        setSelectedServices(prev => {
+          const relatedServices = getServicesForCategory(categoryName);
+          return prev.filter(service => !relatedServices.includes(service));
+        });
+      } else {
+        // Add category and all its related services
+        setSelectedCategories(prev => [...prev, categoryName]);
+        setSelectedServices(prev => {
+          const relatedServices = getServicesForCategory(categoryName);
+          const newServices = relatedServices.filter(service => !prev.includes(service));
+          return [...prev, ...newServices];
+        });
+      }
+    }
+  };
+
+  const getServicesForCategory = (categoryName) => {
+    const categoryServiceMap = {
+      'Property': ['Property Law', 'Real Estate Transactions', 'Landlord-Tenant Disputes', 'Property Development', 'Zoning & Land Use', 'Property Tax Appeals'],
+      'Criminal': ['Criminal Defense', 'DUI Defense', 'Traffic Violations', 'White Collar Crime', 'Drug Crimes', 'Assault & Battery'],
+      'Tax': ['Tax Law', 'Tax Planning', 'Tax Disputes', 'IRS Audits', 'Tax Appeals', 'Business Taxes'],
+      'Family': ['Family Law', 'Divorce', 'Child Custody', 'Child Support', 'Alimony', 'Adoption'],
+      'Business': ['Business Formation', 'Contract Law', 'Corporate Governance', 'Mergers & Acquisitions', 'Securities Law', 'Commercial Litigation'],
+      'Personal Injury': ['Personal Injury', 'Car Accidents', 'Motorcycle Accidents', 'Truck Accidents', 'Slip & Fall', 'Medical Malpractice'],
+      'Immigration': ['Immigration Law', 'Visa Applications', 'Green Card', 'Citizenship', 'Deportation Defense', 'Asylum'],
+      'Divorce': ['Divorce', 'Child Custody', 'Child Support', 'Alimony', 'Prenuptial Agreements', 'Domestic Partnerships'],
+      'DUI': ['DUI Defense', 'Traffic Violations', 'Criminal Defense', 'License Suspension', 'Field Sobriety Tests', 'Breathalyzer Tests'],
+      'Employment': ['Employment Law', 'Discrimination', 'Harassment', 'Wrongful Termination', 'Wage & Hour', 'Workplace Safety'],
+      'Real Estate': ['Real Estate Transactions', 'Property Law', 'Commercial Leasing', 'Residential Leasing', 'Property Management', 'Real Estate Litigation'],
+      'Contract': ['Contract Law', 'Business Contracts', 'Employment Contracts', 'Service Agreements', 'Contract Disputes', 'Contract Review']
+    };
+    return categoryServiceMap[categoryName] || [];
+  };
+
+  // Get service objects for home page display
+  const getServiceObjectsForCategory = (categoryName) => {
+    const categoryServiceMap = {
+      'Property': [
+        { name: 'Property Law', icon: 'PROPERTY', description: 'Buy/Sell Property' },
+        { name: 'Real Estate Transactions', icon: 'HOUSE', description: 'Property Sales' },
+        { name: 'Landlord-Tenant Disputes', icon: 'BUILDING', description: 'Rental Issues' },
+        { name: 'Property Development', icon: 'TOOLS', description: 'Development Law' },
+        { name: 'Zoning & Land Use', icon: 'ZONE', description: 'Land Use Planning' },
+        { name: 'Property Tax Appeals', icon: 'TAX', description: 'Tax Issues' }
+      ],
+      'Criminal': [
+        { name: 'Criminal Defense', icon: 'CRIMINAL', description: 'Criminal Cases' },
+        { name: 'DUI Defense', icon: 'CAR', description: 'Drunk Driving' },
+        { name: 'Traffic Violations', icon: 'TICKET', description: 'Traffic Tickets' },
+        { name: 'White Collar Crime', icon: 'BRIEFCASE', description: 'Financial Crimes' },
+        { name: 'Drug Crimes', icon: 'PILL', description: 'Drug Offenses' },
+        { name: 'Assault & Battery', icon: 'SHIELD', description: 'Violence Cases' }
+      ],
+      'Tax': [
+        { name: 'Tax Law', icon: 'TAX', description: 'Tax Returns' },
+        { name: 'Tax Planning', icon: 'CHART', description: 'Tax Strategy' },
+        { name: 'Tax Disputes', icon: 'SCALE', description: 'IRS Issues' },
+        { name: 'IRS Audits', icon: 'SEARCH', description: 'Audit Defense' },
+        { name: 'Tax Appeals', icon: 'COURT', description: 'Appeal Process' },
+        { name: 'Business Taxes', icon: 'BUILDING', description: 'Corporate Tax' }
+      ],
+      'Family': [
+        { name: 'Family Law', icon: 'FAMILY', description: 'Family Matters' },
+        { name: 'Divorce', icon: 'HEART', description: 'Marriage Dissolution' },
+        { name: 'Child Custody', icon: 'CHILD', description: 'Custody Rights' },
+        { name: 'Child Support', icon: 'MONEY', description: 'Child Support' },
+        { name: 'Alimony', icon: 'MONEY', description: 'Spousal Support' },
+        { name: 'Adoption', icon: 'FAMILY', description: 'Adoption Process' }
+      ],
+      'Business': [
+        { name: 'Business Formation', icon: 'BUILDING', description: 'Start a Business' },
+        { name: 'Contract Law', icon: 'DOC', description: 'Business Contracts' },
+        { name: 'Corporate Governance', icon: 'BUILDING', description: 'Board Management' },
+        { name: 'Mergers & Acquisitions', icon: 'HANDSHAKE', description: 'Business Sales' },
+        { name: 'Securities Law', icon: 'CHART', description: 'Investment Law' },
+        { name: 'Commercial Litigation', icon: 'SCALE', description: 'Business Disputes' }
+      ],
+      'Personal Injury': [
+        { name: 'Personal Injury', icon: 'MEDICAL', description: 'Injury Claims' },
+        { name: 'Car Accidents', icon: 'CAR', description: 'Auto Accidents' },
+        { name: 'Motorcycle Accidents', icon: 'CAR', description: 'Bike Accidents' },
+        { name: 'Truck Accidents', icon: 'CAR', description: 'Truck Crashes' },
+        { name: 'Slip & Fall', icon: 'WARNING', description: 'Premises Liability' },
+        { name: 'Medical Malpractice', icon: 'MEDICAL', description: 'Medical Errors' }
+      ],
+      'Immigration': [
+        { name: 'Immigration Law', icon: 'GLOBE', description: 'Immigration Matters' },
+        { name: 'Visa Applications', icon: 'GLOBE', description: 'Work & Travel Visas' },
+        { name: 'Green Card', icon: 'CARD', description: 'Permanent Residency' },
+        { name: 'Citizenship', icon: 'FLAG', description: 'Naturalization' },
+        { name: 'Deportation Defense', icon: 'SHIELD', description: 'Removal Proceedings' },
+        { name: 'Asylum', icon: 'PROTECTION', description: 'Refugee Status' }
+      ],
+      'Divorce': [
+        { name: 'Divorce', icon: 'HEART', description: 'Marriage Dissolution' },
+        { name: 'Child Custody', icon: 'CHILD', description: 'Custody Rights' },
+        { name: 'Child Support', icon: 'MONEY', description: 'Child Support' },
+        { name: 'Alimony', icon: 'MONEY', description: 'Spousal Support' },
+        { name: 'Prenuptial Agreements', icon: 'DOC', description: 'Pre-marriage Contract' },
+        { name: 'Domestic Partnerships', icon: 'PEOPLE', description: 'Partnership Law' }
+      ],
+      'DUI': [
+        { name: 'DUI Defense', icon: 'CAR', description: 'Drunk Driving Defense' },
+        { name: 'Traffic Violations', icon: 'TICKET', description: 'Traffic Tickets' },
+        { name: 'Criminal Defense', icon: 'CRIMINAL', description: 'Criminal Cases' },
+        { name: 'License Suspension', icon: 'LICENSE', description: 'License Issues' },
+        { name: 'Field Sobriety Tests', icon: 'TEST', description: 'Sobriety Testing' },
+        { name: 'Breathalyzer Tests', icon: 'BREATH', description: 'BAC Testing' }
+      ],
+      'Employment': [
+        { name: 'Employment Law', icon: 'BRIEFCASE', description: 'Workplace Law' },
+        { name: 'Discrimination', icon: 'PEOPLE', description: 'Workplace Discrimination' },
+        { name: 'Harassment', icon: 'SHIELD', description: 'Workplace Harassment' },
+        { name: 'Wrongful Termination', icon: 'BRIEFCASE', description: 'Unlawful Firing' },
+        { name: 'Wage & Hour', icon: 'CLOCK', description: 'Pay Issues' },
+        { name: 'Workplace Safety', icon: 'SHIELD', description: 'Safety Violations' }
+      ],
+      'Real Estate': [
+        { name: 'Real Estate Transactions', icon: 'HOUSE', description: 'Property Sales' },
+        { name: 'Property Law', icon: 'PROPERTY', description: 'Property Matters' },
+        { name: 'Commercial Leasing', icon: 'BUILDING', description: 'Business Leases' },
+        { name: 'Residential Leasing', icon: 'HOME', description: 'Rental Properties' },
+        { name: 'Property Management', icon: 'SETTINGS', description: 'Property Oversight' },
+        { name: 'Real Estate Litigation', icon: 'SCALE', description: 'Property Disputes' }
+      ],
+      'Contract': [
+        { name: 'Contract Law', icon: 'DOC', description: 'Contract Matters' },
+        { name: 'Business Contracts', icon: 'BRIEFCASE', description: 'Business Agreements' },
+        { name: 'Employment Contracts', icon: 'PEOPLE', description: 'Work Agreements' },
+        { name: 'Service Agreements', icon: 'HANDSHAKE', description: 'Service Contracts' },
+        { name: 'Contract Disputes', icon: 'SCALE', description: 'Contract Conflicts' },
+        { name: 'Contract Review', icon: 'SEARCH', description: 'Contract Analysis' }
+      ]
+    };
+    return categoryServiceMap[categoryName] || [];
+  };
+
+  const autoFillLawFirmForm = () => {
+    const fullName = `${registerForm.firstName} ${registerForm.lastName}`.trim();
+    setLawFirmForm(prev => ({
+      ...prev,
+      organizationName: fullName || prev.organizationName,
+      phone: registerForm.phone || prev.phone,
+      email: registerForm.email || prev.email
+    }));
+  };
+
+  const renderCategoriesScreen = () => {
+    const popularCategories = [
+      { name: 'Property', icon: 'PROPERTY' },
+      { name: 'Criminal', icon: 'CRIMINAL' },
+      { name: 'Tax', icon: 'TAX' },
+      { name: 'Family', icon: 'FAMILY_LAW' },
+      { name: 'Business', icon: 'BUSINESS' },
+      { name: 'Personal Injury', icon: 'PERSONAL_INJURY' },
+      { name: 'Immigration', icon: 'GLOBE' },
+      { name: 'Divorce', icon: 'HEART' },
+      { name: 'DUI', icon: 'CAR' },
+      { name: 'Employment', icon: 'BRIEFCASE' },
+      { name: 'Real Estate', icon: 'HOUSE' },
+      { name: 'Contract', icon: 'DOC' }
+    ];
+
+    const popularServices = [
+      { name: 'Property Law', icon: 'PROPERTY' },
+      { name: 'Criminal Defense', icon: 'CRIMINAL' },
+      { name: 'Tax Law', icon: 'TAX' },
+      { name: 'Family Law', icon: 'FAMILY_LAW' },
+      { name: 'Business Formation', icon: 'BUSINESS' },
+      { name: 'Personal Injury', icon: 'PERSONAL_INJURY' },
+      { name: 'Immigration Law', icon: 'GLOBE' },
+      { name: 'Divorce', icon: 'HEART' },
+      { name: 'DUI Defense', icon: 'CAR' },
+      { name: 'Employment Law', icon: 'BRIEFCASE' },
+      { name: 'Real Estate Transactions', icon: 'HOUSE' },
+      { name: 'Contract Law', icon: 'DOC' }
+    ];
+
+    const currentPopularItems = userRole === 'USER' ? popularCategories : popularServices;
+
+
+    const handleProceed = () => {
+      const selectedItems = userRole === 'USER' ? selectedCategories : selectedServices;
+      const itemType = userRole === 'USER' ? 'categories' : 'services';
+      
+      if (selectedItems.length === 0) {
+        showCustomAlert(
+          'warning',
+          `No ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected`,
+          `Please select at least one ${itemType.slice(0, -1)} to ${userRole === 'USER' ? 'get personalized lawyer recommendations' : 'connect with potential clients'}.`,
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      showCustomAlert(
+        'success',
+        `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected!`,
+        `Great! You've selected ${selectedItems.length} ${itemType}. ${userRole === 'USER' ? "We'll show you the best lawyers for your needs." : "You can now connect with potential clients."}`,
+        [
+          {
+            text: 'Continue',
+            style: 'primary',
+            onPress: () => setCurrentScreen('home')
+          }
+        ]
+      );
+    };
+
+    const handleSeeAllCategories = () => {
+      setShowSeeAllCategoriesSelection(true);
+    };
+
+    // Split items into two rows for horizontal slider
+    const firstRowItems = currentPopularItems.slice(0, 6);
+    const secondRowItems = currentPopularItems.slice(6, 12);
+
+    const renderCategorySlider = (items, rowIndex) => (
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.categorySliderRow}
+        contentContainerStyle={styles.categorySliderContent}
+      >
+        {items.map((item, index) => {
+          const isSelected = userRole === 'USER' 
+            ? selectedCategories.includes(item.name)
+            : selectedServices.includes(item.name);
+          return (
+            <TouchableOpacity
+              key={`${rowIndex}-${index}`}
+              style={[
+                styles.categorySliderCard,
+                isSelected && styles.activeCategorySliderCard,
+                index === 0 && { marginLeft: 20 } // Add left margin to first card
+              ]}
+              onPress={() => toggleCategory(item.name)}
+            >
+              <View style={[
+                styles.categorySliderIconContainer,
+                isSelected && styles.activeCategorySliderIconContainer
+              ]}>
+                      <ProfessionalIcon 
+                        type={item.icon} 
+                        size={16} 
+                        color={isSelected ? '#ffffff' : '#2E4A6B'} 
+                      />
+                    </View>
+                <Text style={[
+                      styles.categorySliderText,
+                      isSelected && styles.activeCategorySliderText
+                ]}>
+                      {item.name}
+                </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+
+    return (
     <View style={styles.categoriesContainer}>
       <StatusBar style="dark" />
       
       <View style={styles.categoriesHeader}>
-        <TouchableOpacity onPress={() => setCurrentScreen('login')}>
-          <Text style={styles.backArrow}>←</Text>
+          <TouchableOpacity onPress={() => setCurrentScreen('login')} style={styles.backButton}>
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
         </TouchableOpacity>
-        <TouchableOpacity onPress={() => Alert.alert('Success!', 'Categories selected successfully!')}>
-          <Text style={styles.skipLink}>Skip</Text>
-        </TouchableOpacity>
+          <Text style={styles.headerTitle}>Role Selection</Text>
+          <View style={styles.headerPlaceholder} />
       </View>
 
+        <ScrollView style={styles.categoriesScrollView} showsVerticalScrollIndicator={false}>
       <View style={styles.categoriesContent}>
-        <Text style={styles.categoriesTitle}>Choose Category</Text>
+            {/* Role Selection Bar */}
+            <View style={styles.roleSelectionBar}>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'USER' && styles.activeRoleButton]}
+                onPress={() => setUserRole('USER')}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'USER' && styles.activeRoleButtonText]}>
+                  USER
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'LAWYER' && styles.activeRoleButton]}
+                onPress={() => setUserRole('LAWYER')}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'LAWYER' && styles.activeRoleButtonText]}>
+                  LAWYER
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'LAW_FIRM' && styles.activeRoleButton]}
+                onPress={() => {
+                  setUserRole('LAW_FIRM');
+                  setCurrentScreen('lawFirmRegistration');
+                }}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'LAW_FIRM' && styles.activeRoleButtonText]}>
+                  LAW FIRM
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.categoriesTitle}>
+              {userRole === 'USER' ? 'Choose Categories' : 'Choose Services'}
+            </Text>
         <Text style={styles.categoriesSubtitle}>
-          Please select categories for best searched results{'\n'}for you
+              {userRole === 'USER' 
+                ? 'Select your areas of interest to get personalized lawyer recommendations'
+                : 'Select the services you offer to connect with potential clients'
+              }
         </Text>
 
-        <View style={styles.categoriesGrid}>
-          {[
-            'Property', 'Criminal', 'Tax', 'Civil Rights',
-            'Immigration', 'Environmental', 'Bankruptcy', 'Family',
-            'Corporate', 'Others'
-          ].map((categoryName, index) => {
-            const isSelected = selectedCategories.includes(categoryName);
+            <View style={styles.categoriesSliderContainer}>
+              <View style={styles.categoriesSliderHeader}>
+                <Text style={styles.categoriesSliderTitle}>
+                  {userRole === 'USER' ? 'Popular Categories' : 'Popular Services'}
+                </Text>
+                <TouchableOpacity onPress={handleSeeAllCategories}>
+                  <Text style={styles.seeAllButton}>See All</Text>
+                </TouchableOpacity>
+              </View>
+              
+              {renderCategorySlider(firstRowItems, 0)}
+              {renderCategorySlider(secondRowItems, 1)}
+            </View>
+
+            <View style={styles.messageSection}>
+              <View style={styles.messageSectionHeader}>
+                <Text style={styles.messageTitle}>
+                  Still Confused? <Text style={styles.optional}>(optional)</Text>
+                </Text>
+                <Text style={styles.messageSubtitle}>
+                  Describe your legal issue and we'll help you find the right lawyer
+                </Text>
+              </View>
+              
+              <View style={styles.messageInputSection}>
+                <Text style={styles.messageLabel}>Your Message</Text>
+                <TextInput
+                  style={styles.messageInput}
+                  placeholder="Describe your legal situation here..."
+                  multiline={true}
+                  numberOfLines={4}
+                  textAlignVertical="top"
+                />
+                <Text style={styles.messageHint}>
+                  Share details about your legal concern to get better recommendations
+                </Text>
+              </View>
+            </View>
+
+            {(userRole === 'USER' ? selectedCategories.length > 0 : selectedServices.length > 0) && (
+              <View style={styles.selectedCategoriesInfo}>
+                <Text style={styles.selectedCategoriesTitle}>
+                  {userRole === 'USER' 
+                    ? `Selected Categories (${selectedCategories.length})`
+                    : `Selected Services (${selectedServices.length})`
+                  }
+                </Text>
+                <View style={styles.selectedCategoriesList}>
+                  {(userRole === 'USER' ? selectedCategories : selectedServices).map((item, index) => (
+                    <View key={index} style={styles.selectedCategoryTag}>
+                      <Text style={styles.selectedCategoryTagText}>{item}</Text>
+                    </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
+
+        <View style={styles.categoriesFooter}>
+          <TouchableOpacity 
+            style={[
+              styles.proceedBtn,
+              (userRole === 'USER' ? selectedCategories.length === 0 : selectedServices.length === 0) && styles.proceedBtnDisabled
+            ]}
+            onPress={handleProceed}
+          >
+            <Text style={[
+              styles.proceedText,
+              (userRole === 'USER' ? selectedCategories.length === 0 : selectedServices.length === 0) && styles.proceedTextDisabled
+            ]}>
+              Continue ({(userRole === 'USER' ? selectedCategories.length : selectedServices.length)} selected)
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLawFirmRegistrationScreen = () => {
+    const handleLawFirmFieldChange = (field, value) => {
+      setLawFirmForm(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    const handleLawFirmProceed = () => {
+      if (!lawFirmForm.organizationName.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter your organization name.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (selectedCategories.length === 0) {
+        showCustomAlert(
+          'warning',
+          'No Categories Selected',
+          'Please select at least one category to define your law firm\'s practice areas.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      showCustomAlert(
+        'success',
+        'Law Firm Registration Complete!',
+        `Great! Your law firm "${lawFirmForm.organizationName}" has been registered with ${selectedCategories.length} practice areas and ${selectedServices.length} services.`,
+        [
+          {
+            text: 'Continue',
+            style: 'primary',
+            onPress: () => setCurrentScreen('home')
+          }
+        ]
+      );
+    };
+
+    const popularCategories = [
+      { name: 'Property', icon: 'PROPERTY' },
+      { name: 'Criminal', icon: 'CRIMINAL' },
+      { name: 'Tax', icon: 'TAX' },
+      { name: 'Family', icon: 'FAMILY_LAW' },
+      { name: 'Business', icon: 'BUSINESS' },
+      { name: 'Personal Injury', icon: 'PERSONAL_INJURY' },
+      { name: 'Immigration', icon: 'GLOBE' },
+      { name: 'Divorce', icon: 'HEART' },
+      { name: 'DUI', icon: 'CAR' },
+      { name: 'Employment', icon: 'BRIEFCASE' },
+      { name: 'Real Estate', icon: 'HOUSE' },
+      { name: 'Contract', icon: 'DOC' }
+    ];
+
+    const firstRowCategories = popularCategories.slice(0, 6);
+    const secondRowCategories = popularCategories.slice(6, 12);
+
+    const renderCategorySlider = (categories, rowIndex) => (
+      <ScrollView 
+        horizontal 
+        showsHorizontalScrollIndicator={false}
+        style={styles.categorySliderRow}
+        contentContainerStyle={styles.categorySliderContent}
+      >
+        {categories.map((category, index) => {
+          const isSelected = selectedCategories.includes(category.name);
+          return (
+            <TouchableOpacity
+              key={`${rowIndex}-${index}`}
+              style={[
+                styles.categorySliderCard,
+                isSelected && styles.activeCategorySliderCard,
+                index === 0 && { marginLeft: 20 }
+              ]}
+              onPress={() => toggleCategory(category.name)}
+            >
+              <View style={[
+                styles.categorySliderIconContainer,
+                isSelected && styles.activeCategorySliderIconContainer
+              ]}>
+                <ProfessionalIcon 
+                  type={category.icon} 
+                  size={16} 
+                  color={isSelected ? '#ffffff' : '#2E4A6B'} 
+                />
+              </View>
+              <Text style={[
+                styles.categorySliderText,
+                isSelected && styles.activeCategorySliderText
+              ]}>
+                {category.name}
+              </Text>
+            </TouchableOpacity>
+          );
+        })}
+      </ScrollView>
+    );
+
+    return (
+      <View style={styles.categoriesContainer}>
+        <StatusBar style="dark" />
+        
+        <View style={styles.categoriesHeader}>
+          <TouchableOpacity onPress={() => setCurrentScreen('login')} style={styles.backButton}>
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.headerTitle}>Registration</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+
+        <ScrollView style={styles.categoriesScrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.categoriesContent}>
+            {/* Role Selection Bar */}
+            <View style={styles.roleSelectionBar}>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'USER' && styles.activeRoleButton]}
+                onPress={() => {
+                  setUserRole('USER');
+                  setCurrentScreen('categories');
+                }}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'USER' && styles.activeRoleButtonText]}>
+                  USER
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'LAWYER' && styles.activeRoleButton]}
+                onPress={() => {
+                  setUserRole('LAWYER');
+                  setCurrentScreen('categories');
+                }}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'LAWYER' && styles.activeRoleButtonText]}>
+                  LAWYER
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity 
+                style={[styles.roleButton, userRole === 'LAW_FIRM' && styles.activeRoleButton]}
+                onPress={() => setUserRole('LAW_FIRM')}
+              >
+                <Text style={[styles.roleButtonText, userRole === 'LAW_FIRM' && styles.activeRoleButtonText]}>
+                  LAW FIRM
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            <Text style={styles.categoriesTitle}>Law Firm Registration</Text>
+            <Text style={styles.categoriesSubtitle}>
+              Complete your organization details and select your practice areas
+            </Text>
+            {/* Organization Registration Card */}
+            <View style={styles.lawFirmRegistrationCard}>
+              <View style={styles.lawFirmCardHeader}>
+                <View style={styles.lawFirmCardIcon}>
+                  <ProfessionalIcon type="BUILDING" size={24} color="#2E4A6B" />
+                </View>
+                <Text style={styles.lawFirmCardTitle}>Organization Details</Text>
+              </View>
+              
+              <View style={styles.lawFirmForm}>
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Organization Name *</Text>
+                  <TextInput
+                    style={styles.lawFirmInput}
+                    value={lawFirmForm.organizationName}
+                    onChangeText={(value) => handleLawFirmFieldChange('organizationName', value)}
+                    placeholder="Enter your law firm name"
+                    placeholderTextColor="#adb5bd"
+                  />
+                </View>
+
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Phone Number</Text>
+                  <TextInput
+                    style={styles.lawFirmInput}
+                    value={lawFirmForm.phone}
+                    onChangeText={(value) => handleLawFirmFieldChange('phone', value)}
+                    placeholder="Enter phone number"
+                    placeholderTextColor="#adb5bd"
+                    keyboardType="phone-pad"
+                  />
+                </View>
+
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Email Address</Text>
+                  <TextInput
+                    style={styles.lawFirmInput}
+                    value={lawFirmForm.email}
+                    onChangeText={(value) => handleLawFirmFieldChange('email', value)}
+                    placeholder="Enter email address"
+                    placeholderTextColor="#adb5bd"
+                    keyboardType="email-address"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Address</Text>
+                  <TextInput
+                    style={styles.lawFirmInput}
+                    value={lawFirmForm.address}
+                    onChangeText={(value) => handleLawFirmFieldChange('address', value)}
+                    placeholder="Enter office address"
+                    placeholderTextColor="#adb5bd"
+                    multiline
+                    numberOfLines={2}
+                  />
+                </View>
+
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Website</Text>
+                  <TextInput
+                    style={styles.lawFirmInput}
+                    value={lawFirmForm.website}
+                    onChangeText={(value) => handleLawFirmFieldChange('website', value)}
+                    placeholder="Enter website URL"
+                    placeholderTextColor="#adb5bd"
+                    autoCapitalize="none"
+                  />
+                </View>
+
+                <View style={styles.lawFirmFieldContainer}>
+                  <Text style={styles.lawFirmFieldLabel}>Description</Text>
+                  <TextInput
+                    style={[styles.lawFirmInput, styles.lawFirmTextArea]}
+                    value={lawFirmForm.description}
+                    onChangeText={(value) => handleLawFirmFieldChange('description', value)}
+                    placeholder="Brief description of your law firm"
+                    placeholderTextColor="#adb5bd"
+                    multiline
+                    numberOfLines={4}
+                  />
+                </View>
+              </View>
+            </View>
+
+            {/* Practice Areas Selection */}
+            <View style={styles.lawFirmPracticeAreas}>
+              <Text style={styles.lawFirmSectionTitle}>Practice Areas</Text>
+              <Text style={styles.lawFirmSectionSubtitle}>
+                Select your practice areas. Each category includes 6 related services.
+              </Text>
+
+              <View style={styles.lawFirmCategoriesSlider}>
+                <View style={styles.lawFirmCategoriesSliderHeader}>
+                  <Text style={styles.lawFirmCategoriesSliderTitle}>Popular Categories</Text>
+                </View>
+                
+                {renderCategorySlider(firstRowCategories, 0)}
+                {renderCategorySlider(secondRowCategories, 1)}
+              </View>
+
+              {/* Selected Categories and Services Display */}
+              {selectedCategories.length > 0 && (
+                <View style={styles.lawFirmSelectedInfo}>
+                  <Text style={styles.lawFirmSelectedTitle}>
+                    Selected Practice Areas ({selectedCategories.length})
+                  </Text>
+                  <View style={styles.lawFirmSelectedList}>
+                    {selectedCategories.map((category, index) => (
+                      <View key={index} style={styles.lawFirmSelectedTag}>
+                        <Text style={styles.lawFirmSelectedTagText}>{category}</Text>
+                        <TouchableOpacity 
+                          onPress={() => toggleCategory(category)}
+                          style={styles.lawFirmRemoveButton}
+                        >
+                          <ProfessionalIcon type="CLOSE" size={12} color="#ffffff" />
+                        </TouchableOpacity>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+
+              {selectedServices.length > 0 && (
+                <View style={styles.lawFirmSelectedInfo}>
+                  <Text style={styles.lawFirmSelectedTitle}>
+                    Related Services ({selectedServices.length})
+                  </Text>
+                  <View style={styles.lawFirmSelectedList}>
+                    {selectedServices.map((service, index) => (
+                      <View key={index} style={styles.lawFirmServiceTag}>
+                        <Text style={styles.lawFirmServiceTagText}>{service}</Text>
+                      </View>
+                    ))}
+                  </View>
+                </View>
+              )}
+            </View>
+          </View>
+        </ScrollView>
+
+        <View style={styles.categoriesFooter}>
+          <TouchableOpacity 
+            style={[
+              styles.proceedBtn,
+              (!lawFirmForm.organizationName.trim() || selectedCategories.length === 0) && styles.proceedBtnDisabled
+            ]}
+            onPress={handleLawFirmProceed}
+          >
+            <Text style={[
+              styles.proceedText,
+              (!lawFirmForm.organizationName.trim() || selectedCategories.length === 0) && styles.proceedTextDisabled
+            ]}>
+              Complete Registration ({selectedCategories.length} areas, {selectedServices.length} services)
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderSeeAllCategoriesSelectionScreen = () => {
+    const allCategories = [
+      { name: 'Property', icon: 'PROPERTY' },
+      { name: 'Criminal', icon: 'CRIMINAL' },
+      { name: 'Tax', icon: 'TAX' },
+      { name: 'Family', icon: 'FAMILY_LAW' },
+      { name: 'Business', icon: 'BUSINESS' },
+      { name: 'Personal Injury', icon: 'PERSONAL_INJURY' },
+      { name: 'Civil Rights', icon: 'PEOPLE' },
+      { name: 'Immigration', icon: 'GLOBE' },
+      { name: 'Environmental', icon: 'LEAF' },
+      { name: 'Bankruptcy', icon: 'BRIEFCASE' },
+      { name: 'Employment', icon: 'BRIEFCASE' },
+      { name: 'Real Estate', icon: 'HOUSE' },
+      { name: 'Estate Planning', icon: 'WILL' },
+      { name: 'Intellectual Property', icon: 'LIGHTBULB' },
+      { name: 'Contract', icon: 'DOC' },
+      { name: 'Divorce', icon: 'HEART' },
+      { name: 'DUI', icon: 'CAR' },
+      { name: 'Workers Comp', icon: 'TOOLS' },
+      { name: 'Medical Malpractice', icon: 'MEDICAL' },
+      { name: 'Securities', icon: 'CHART' },
+      { name: 'Patent', icon: 'LIGHTBULB' },
+      { name: 'Trademark', icon: 'TM' },
+      { name: 'Copyright', icon: 'COPY' },
+      { name: 'Corporate', icon: 'BUILDING' },
+      { name: 'Insurance', icon: 'SHIELD' },
+      { name: 'Healthcare', icon: 'MEDICAL' },
+      { name: 'Construction', icon: 'TOOLS' },
+      { name: 'Entertainment', icon: 'STAR' },
+      { name: 'Sports', icon: 'FITNESS' },
+      { name: 'Education', icon: 'BOOK' }
+    ];
+
+    const allServices = [
+      // Property & Real Estate Services
+      { name: 'Property Law', icon: 'PROPERTY' },
+      { name: 'Real Estate Transactions', icon: 'HOUSE' },
+      { name: 'Landlord-Tenant Disputes', icon: 'BUILDING' },
+      { name: 'Property Development', icon: 'TOOLS' },
+      { name: 'Zoning & Land Use', icon: 'MAP' },
+      { name: 'Eminent Domain', icon: 'GOVERNMENT' },
+      { name: 'Property Tax Appeals', icon: 'TAX' },
+      { name: 'Commercial Leasing', icon: 'BRIEFCASE' },
+      { name: 'Residential Leasing', icon: 'HOME' },
+      { name: 'Property Management', icon: 'SETTINGS' },
+      
+      // Criminal Law Services
+      { name: 'Criminal Defense', icon: 'CRIMINAL' },
+      { name: 'DUI Defense', icon: 'CAR' },
+      { name: 'Traffic Violations', icon: 'ROAD' },
+      { name: 'White Collar Crime', icon: 'BRIEFCASE' },
+      { name: 'Drug Crimes', icon: 'MEDICAL' },
+      { name: 'Assault & Battery', icon: 'WARNING' },
+      { name: 'Theft & Fraud', icon: 'MONEY' },
+      { name: 'Domestic Violence', icon: 'HEART' },
+      { name: 'Juvenile Crime', icon: 'CHILD' },
+      { name: 'Appeals & Post-Conviction', icon: 'COURT' },
+      
+      // Family Law Services
+      { name: 'Divorce', icon: 'HEART' },
+      { name: 'Child Custody', icon: 'CHILD' },
+      { name: 'Child Support', icon: 'MONEY' },
+      { name: 'Alimony', icon: 'MONEY' },
+      { name: 'Adoption', icon: 'FAMILY' },
+      { name: 'Prenuptial Agreements', icon: 'DOC' },
+      { name: 'Domestic Partnerships', icon: 'PEOPLE' },
+      { name: 'Paternity', icon: 'CHILD' },
+      { name: 'Guardianship', icon: 'CHILD' },
+      { name: 'Elder Law', icon: 'PEOPLE' },
+      
+      // Business & Corporate Services
+      { name: 'Business Formation', icon: 'BUILDING' },
+      { name: 'Contract Law', icon: 'DOC' },
+      { name: 'Corporate Governance', icon: 'BUILDING' },
+      { name: 'Mergers & Acquisitions', icon: 'MERGE' },
+      { name: 'Securities Law', icon: 'CHART' },
+      { name: 'Commercial Litigation', icon: 'COURT' },
+      { name: 'Franchise Law', icon: 'STORE' },
+      { name: 'Partnership Agreements', icon: 'PEOPLE' },
+      { name: 'Employment Contracts', icon: 'BRIEFCASE' },
+      { name: 'Business Disputes', icon: 'COURT' },
+      
+      // Personal Injury Services
+      { name: 'Car Accidents', icon: 'CAR' },
+      { name: 'Motorcycle Accidents', icon: 'BIKE' },
+      { name: 'Truck Accidents', icon: 'TRUCK' },
+      { name: 'Slip & Fall', icon: 'WARNING' },
+      { name: 'Medical Malpractice', icon: 'MEDICAL' },
+      { name: 'Product Liability', icon: 'PACKAGE' },
+      { name: 'Workers Compensation', icon: 'TOOLS' },
+      { name: 'Wrongful Death', icon: 'HEART' },
+      { name: 'Brain Injuries', icon: 'MEDICAL' },
+      { name: 'Spinal Cord Injuries', icon: 'MEDICAL' },
+      
+      // Immigration Services
+      { name: 'Immigration Law', icon: 'GLOBE' },
+      { name: 'Visa Applications', icon: 'PASSPORT' },
+      { name: 'Green Card', icon: 'CARD' },
+      { name: 'Citizenship', icon: 'FLAG' },
+      { name: 'Deportation Defense', icon: 'COURT' },
+      { name: 'Asylum', icon: 'SAFE' },
+      { name: 'Work Permits', icon: 'BRIEFCASE' },
+      { name: 'Family Immigration', icon: 'FAMILY' },
+      { name: 'Business Immigration', icon: 'BUILDING' },
+      { name: 'Student Visas', icon: 'BOOK' },
+      
+      // Tax Services
+      { name: 'Tax Law', icon: 'TAX' },
+      { name: 'Tax Planning', icon: 'CALENDAR' },
+      { name: 'Tax Disputes', icon: 'COURT' },
+      { name: 'IRS Audits', icon: 'SEARCH' },
+      { name: 'Tax Appeals', icon: 'COURT' },
+      { name: 'Business Taxes', icon: 'BRIEFCASE' },
+      { name: 'Estate Tax', icon: 'WILL' },
+      { name: 'International Tax', icon: 'GLOBE' },
+      { name: 'Tax Compliance', icon: 'CHECK' },
+      { name: 'Tax Litigation', icon: 'COURT' },
+      
+      // Employment Services
+      { name: 'Employment Law', icon: 'BRIEFCASE' },
+      { name: 'Discrimination', icon: 'PEOPLE' },
+      { name: 'Harassment', icon: 'WARNING' },
+      { name: 'Wrongful Termination', icon: 'CANCEL' },
+      { name: 'Wage & Hour', icon: 'MONEY' },
+      { name: 'Workplace Safety', icon: 'SHIELD' },
+      { name: 'Labor Relations', icon: 'PEOPLE' },
+      { name: 'Non-Compete', icon: 'DOC' },
+      { name: 'Severance Agreements', icon: 'DOC' },
+      { name: 'Employment Contracts', icon: 'DOC' },
+      
+      // Intellectual Property Services
+      { name: 'Patent Law', icon: 'LIGHTBULB' },
+      { name: 'Trademark Law', icon: 'TM' },
+      { name: 'Copyright Law', icon: 'COPY' },
+      { name: 'Trade Secrets', icon: 'LOCK' },
+      { name: 'IP Litigation', icon: 'COURT' },
+      { name: 'IP Licensing', icon: 'DOC' },
+      { name: 'IP Portfolio Management', icon: 'FOLDER' },
+      { name: 'IP Due Diligence', icon: 'SEARCH' },
+      { name: 'IP Enforcement', icon: 'SHIELD' },
+      { name: 'IP Strategy', icon: 'CHART' },
+      
+      // Estate Planning Services
+      { name: 'Estate Planning', icon: 'WILL' },
+      { name: 'Wills & Trusts', icon: 'DOC' },
+      { name: 'Probate', icon: 'COURT' },
+      { name: 'Estate Administration', icon: 'FOLDER' },
+      { name: 'Power of Attorney', icon: 'DOC' },
+      { name: 'Living Wills', icon: 'DOC' },
+      { name: 'Charitable Giving', icon: 'HEART' },
+      { name: 'Asset Protection', icon: 'SHIELD' },
+      { name: 'Estate Tax Planning', icon: 'TAX' },
+      { name: 'Business Succession', icon: 'BUILDING' },
+      
+      // Bankruptcy Services
+      { name: 'Bankruptcy Law', icon: 'BRIEFCASE' },
+      { name: 'Chapter 7', icon: 'DOC' },
+      { name: 'Chapter 11', icon: 'DOC' },
+      { name: 'Chapter 13', icon: 'DOC' },
+      { name: 'Debt Relief', icon: 'MONEY' },
+      { name: 'Creditor Rights', icon: 'MONEY' },
+      { name: 'Foreclosure Defense', icon: 'HOUSE' },
+      { name: 'Debt Negotiation', icon: 'MONEY' },
+      { name: 'Credit Repair', icon: 'CARD' },
+      { name: 'Business Bankruptcy', icon: 'BUILDING' },
+      
+      // Environmental Services
+      { name: 'Environmental Law', icon: 'LEAF' },
+      { name: 'Environmental Compliance', icon: 'CHECK' },
+      { name: 'Environmental Litigation', icon: 'COURT' },
+      { name: 'Clean Air Act', icon: 'LEAF' },
+      { name: 'Clean Water Act', icon: 'WATER' },
+      { name: 'CERCLA/Superfund', icon: 'WARNING' },
+      { name: 'Environmental Permits', icon: 'DOC' },
+      { name: 'Environmental Due Diligence', icon: 'SEARCH' },
+      { name: 'Climate Change Law', icon: 'LEAF' },
+      { name: 'Renewable Energy', icon: 'LIGHTBULB' },
+      
+      // Healthcare Services
+      { name: 'Healthcare Law', icon: 'MEDICAL' },
+      { name: 'HIPAA Compliance', icon: 'SHIELD' },
+      { name: 'Medical Licensing', icon: 'DOC' },
+      { name: 'Healthcare Contracts', icon: 'DOC' },
+      { name: 'Healthcare Litigation', icon: 'COURT' },
+      { name: 'Healthcare Fraud', icon: 'WARNING' },
+      { name: 'Pharmaceutical Law', icon: 'MEDICAL' },
+      { name: 'Telemedicine Law', icon: 'MEDICAL' },
+      { name: 'Healthcare Privacy', icon: 'LOCK' },
+      { name: 'Healthcare Regulation', icon: 'GOVERNMENT' },
+      
+      // Technology Services
+      { name: 'Technology Law', icon: 'COMPUTER' },
+      { name: 'Cybersecurity Law', icon: 'SHIELD' },
+      { name: 'Data Privacy', icon: 'LOCK' },
+      { name: 'Software Licensing', icon: 'DOC' },
+      { name: 'IT Contracts', icon: 'DOC' },
+      { name: 'E-commerce Law', icon: 'STORE' },
+      { name: 'Social Media Law', icon: 'PEOPLE' },
+      { name: 'Cloud Computing', icon: 'CLOUD' },
+      { name: 'AI & Machine Learning', icon: 'ROBOT' },
+      { name: 'Blockchain Law', icon: 'CHAIN' },
+      
+      // Entertainment Services
+      { name: 'Entertainment Law', icon: 'STAR' },
+      { name: 'Music Law', icon: 'MUSIC' },
+      { name: 'Film & TV', icon: 'VIDEO' },
+      { name: 'Publishing', icon: 'BOOK' },
+      { name: 'Sports Law', icon: 'FITNESS' },
+      { name: 'Gaming Law', icon: 'GAME' },
+      { name: 'Celebrity Rights', icon: 'STAR' },
+      { name: 'Entertainment Contracts', icon: 'DOC' },
+      { name: 'Royalty Disputes', icon: 'MONEY' },
+      { name: 'Entertainment Litigation', icon: 'COURT' },
+      
+      // Construction Services
+      { name: 'Construction Law', icon: 'TOOLS' },
+      { name: 'Construction Contracts', icon: 'DOC' },
+      { name: 'Construction Defects', icon: 'WARNING' },
+      { name: 'Mechanic\'s Liens', icon: 'MONEY' },
+      { name: 'Construction Disputes', icon: 'COURT' },
+      { name: 'Building Codes', icon: 'GOVERNMENT' },
+      { name: 'Construction Safety', icon: 'SHIELD' },
+      { name: 'Construction Insurance', icon: 'SHIELD' },
+      { name: 'Construction Permits', icon: 'DOC' },
+      { name: 'Construction Litigation', icon: 'COURT' },
+      
+      // Insurance Services
+      { name: 'Insurance Law', icon: 'SHIELD' },
+      { name: 'Insurance Claims', icon: 'MONEY' },
+      { name: 'Insurance Disputes', icon: 'COURT' },
+      { name: 'Bad Faith Insurance', icon: 'WARNING' },
+      { name: 'Life Insurance', icon: 'HEART' },
+      { name: 'Health Insurance', icon: 'MEDICAL' },
+      { name: 'Auto Insurance', icon: 'CAR' },
+      { name: 'Property Insurance', icon: 'HOUSE' },
+      { name: 'Business Insurance', icon: 'BUILDING' },
+      { name: 'Insurance Coverage', icon: 'SHIELD' },
+      
+      // Education Services
+      { name: 'Education Law', icon: 'BOOK' },
+      { name: 'Student Rights', icon: 'CHILD' },
+      { name: 'Special Education', icon: 'CHILD' },
+      { name: 'School Discipline', icon: 'WARNING' },
+      { name: 'Title IX', icon: 'PEOPLE' },
+      { name: 'Education Contracts', icon: 'DOC' },
+      { name: 'Education Litigation', icon: 'COURT' },
+      { name: 'Higher Education', icon: 'BOOK' },
+      { name: 'Education Compliance', icon: 'CHECK' },
+      { name: 'Education Policy', icon: 'GOVERNMENT' },
+      
+      // Government Services
+      { name: 'Government Law', icon: 'GOVERNMENT' },
+      { name: 'Administrative Law', icon: 'GOVERNMENT' },
+      { name: 'Constitutional Law', icon: 'FLAG' },
+      { name: 'Civil Rights', icon: 'PEOPLE' },
+      { name: 'Voting Rights', icon: 'VOTE' },
+      { name: 'Government Contracts', icon: 'DOC' },
+      { name: 'Government Compliance', icon: 'CHECK' },
+      { name: 'Government Litigation', icon: 'COURT' },
+      { name: 'Public Policy', icon: 'GOVERNMENT' },
+      { name: 'Regulatory Law', icon: 'GOVERNMENT' },
+      
+      // International Services
+      { name: 'International Law', icon: 'GLOBE' },
+      { name: 'International Trade', icon: 'SHIP' },
+      { name: 'International Contracts', icon: 'DOC' },
+      { name: 'International Disputes', icon: 'COURT' },
+      { name: 'International Arbitration', icon: 'COURT' },
+      { name: 'International Compliance', icon: 'CHECK' },
+      { name: 'International Business', icon: 'BUILDING' },
+      { name: 'International Tax', icon: 'TAX' },
+      { name: 'International IP', icon: 'LIGHTBULB' },
+      { name: 'International Litigation', icon: 'COURT' },
+      
+      // Aviation Services
+      { name: 'Aviation Law', icon: 'PLANE' },
+      { name: 'Aircraft Accidents', icon: 'PLANE' },
+      { name: 'Aviation Regulation', icon: 'GOVERNMENT' },
+      { name: 'Aviation Contracts', icon: 'DOC' },
+      { name: 'Aviation Insurance', icon: 'SHIELD' },
+      { name: 'Aviation Litigation', icon: 'COURT' },
+      { name: 'Airport Law', icon: 'PLANE' },
+      { name: 'Aviation Compliance', icon: 'CHECK' },
+      { name: 'Aviation Safety', icon: 'SHIELD' },
+      { name: 'Aviation Disputes', icon: 'COURT' },
+      
+      // Maritime Services
+      { name: 'Maritime Law', icon: 'SHIP' },
+      { name: 'Admiralty Law', icon: 'SHIP' },
+      { name: 'Maritime Accidents', icon: 'SHIP' },
+      { name: 'Maritime Contracts', icon: 'DOC' },
+      { name: 'Maritime Insurance', icon: 'SHIELD' },
+      { name: 'Maritime Litigation', icon: 'COURT' },
+      { name: 'Cargo Disputes', icon: 'PACKAGE' },
+      { name: 'Maritime Regulation', icon: 'GOVERNMENT' },
+      { name: 'Maritime Compliance', icon: 'CHECK' },
+      { name: 'Maritime Safety', icon: 'SHIELD' }
+    ];
+
+    const currentItems = userRole === 'USER' ? allCategories : allServices;
+    const currentSelections = userRole === 'USER' ? selectedCategories : selectedServices;
+    const itemType = userRole === 'USER' ? 'Categories' : 'Services';
+    const itemTypeSingular = userRole === 'USER' ? 'Category' : 'Service';
+
+    const handleBackToCategories = () => {
+      setShowSeeAllCategoriesSelection(false);
+    };
+
+    return (
+      <View style={styles.seeAllCategoriesContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.seeAllCategoriesHeader}>
+          <TouchableOpacity onPress={handleBackToCategories} style={styles.seeAllBackButton}>
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.seeAllCategoriesTitle}>All {itemType}</Text>
+          <View style={styles.seeAllPlaceholder} />
+        </View>
+
+        <ScrollView style={styles.seeAllCategoriesScroll} showsVerticalScrollIndicator={false}>
+          <View style={styles.seeAllCategoriesContent}>
+            <Text style={styles.seeAllSubtitle}>
+              Select multiple {itemTypeSingular.toLowerCase()}s that interest you
+            </Text>
+
+            {/* Items Grid */}
+            <View style={styles.seeAllCategoriesGrid}>
+              {currentItems.map((item, index) => {
+                const isSelected = currentSelections.includes(item.name);
   return (
               <TouchableOpacity
                 key={index}
                 style={[
-                  styles.categoryBtn,
-                  isSelected && styles.activeCategoryBtn
-                ]}
-                onPress={() => toggleCategory(categoryName)}
-              >
+                      styles.seeAllCategoryCard,
+                      isSelected && styles.activeSeeAllCategoryCard
+                    ]}
+                    onPress={() => toggleCategory(item.name)}
+                  >
+                    <View style={[
+                      styles.seeAllCategoryIconContainer,
+                      isSelected && styles.activeSeeAllCategoryIconContainer
+                    ]}>
+                      <ProfessionalIcon 
+                        type={item.icon} 
+                        size={24} 
+                        color={isSelected ? '#ffffff' : '#2E4A6B'} 
+                      />
+                    </View>
                 <Text style={[
-                  styles.categoryText,
-                  isSelected && styles.activeCategoryText
+                      styles.seeAllCategoryText,
+                      isSelected && styles.activeSeeAllCategoryText
                 ]}>
-                  {categoryName}
+                      {item.name}
                 </Text>
               </TouchableOpacity>
             );
           })}
         </View>
 
-        <View style={styles.messageSection}>
-          <Text style={styles.messageTitle}>Still Confused? <Text style={styles.optional}>(optional)</Text></Text>
-          <Text style={styles.messageSubtitle}>
-            Share your issue and write us to get the best{'\n'}lawyers out there
+            {/* Selected Items Display */}
+            {currentSelections.length > 0 && (
+              <View style={styles.selectedCategoriesInfo}>
+                <Text style={styles.selectedCategoriesTitle}>
+                  Selected {itemType} ({currentSelections.length})
           </Text>
-          
-          <Text style={styles.messageLabel}>Your Message</Text>
-          <TextInput
-            style={styles.messageInput}
-            placeholder="I have been looking for|"
-            multiline={true}
-          />
+                <View style={styles.selectedCategoriesList}>
+                  {currentSelections.map((item, index) => (
+                    <View key={index} style={styles.selectedCategoryTag}>
+                      <Text style={styles.selectedCategoryTagText}>{item}</Text>
+                      <TouchableOpacity 
+                        onPress={() => toggleCategory(item)}
+                        style={styles.removeCategoryButton}
+                      >
+                        <ProfessionalIcon type="CLOSE" size={12} color="#ffffff" />
+                      </TouchableOpacity>
         </View>
+                  ))}
+                </View>
+              </View>
+            )}
+          </View>
+        </ScrollView>
 
+        {/* Footer */}
+        <View style={styles.seeAllCategoriesFooter}>
         <TouchableOpacity 
-          style={styles.proceedBtn}
-          onPress={() => setCurrentScreen('home')}
+            style={styles.seeAllDoneButton}
+            onPress={handleBackToCategories}
         >
-          <Text style={styles.proceedText}>Proceed</Text>
+            <Text style={styles.seeAllDoneButtonText}>
+              Done ({currentSelections.length} selected)
+            </Text>
         </TouchableOpacity>
       </View>
     </View>
   );
+  };
 
   const renderAllCategoriesScreen = () => (
     <View style={styles.allCategoriesContainer}>
@@ -441,7 +1634,7 @@ export default function App() {
       {/* Header */}
       <View style={styles.allCategoriesHeader}>
         <TouchableOpacity onPress={() => setShowAllCategories(false)} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
         </TouchableOpacity>
         <Text style={styles.allCategoriesTitle}>All Categories</Text>
         <View style={styles.placeholder} />
@@ -505,89 +1698,85 @@ export default function App() {
     </View>
   );
 
-  const renderCategoryConfirmationScreen = () => {
-    const categoryData = {
-      'Property': { icon: 'PROPERTY', description: 'Property Law Services' },
-      'Criminal': { icon: 'CRIMINAL', description: 'Criminal Defense Services' },
-      'Tax': { icon: 'TAX', description: 'Tax Law Services' },
-      'Family': { icon: 'FAMILY_LAW', description: 'Family Law Services' },
-      'Business': { icon: 'BUSINESS', description: 'Business Law Services' },
-      'Personal Injury': { icon: 'PERSONAL_INJURY', description: 'Personal Injury Services' },
-      'Civil Rights': { icon: 'PEOPLE', description: 'Civil Rights Services' },
-      'Immigration': { icon: 'GLOBE', description: 'Immigration Services' },
-      'Environmental': { icon: 'LEAF', description: 'Environmental Law Services' },
-      'Bankruptcy': { icon: 'BRIEFCASE', description: 'Bankruptcy Services' },
-      'Employment': { icon: 'BRIEFCASE', description: 'Employment Law Services' },
-      'Real Estate': { icon: 'HOUSE', description: 'Real Estate Services' },
-      'Estate Planning': { icon: 'WILL', description: 'Estate Planning Services' },
-      'Intellectual Property': { icon: 'LIGHTBULB', description: 'IP Law Services' },
-      'Contract': { icon: 'DOC', description: 'Contract Law Services' },
-      'Divorce': { icon: 'HEART', description: 'Divorce Services' },
-      'DUI': { icon: 'CAR', description: 'DUI Defense Services' },
-      'Workers Comp': { icon: 'TOOLS', description: 'Workers Compensation Services' },
-      'Medical Malpractice': { icon: 'MEDICAL', description: 'Medical Malpractice Services' },
-      'Securities': { icon: 'CHART', description: 'Securities Law Services' },
-      'Patent': { icon: 'LIGHTBULB', description: 'Patent Law Services' },
-      'Trademark': { icon: 'TM', description: 'Trademark Services' },
-      'Copyright': { icon: 'COPY', description: 'Copyright Services' },
-      'Corporate': { icon: 'BUILDING', description: 'Corporate Law Services' }
+  const renderCategorySelectionPage = () => {
+    const legalAreaData = {
+      'Property': { iconType: 'PROPERTY', serviceDesc: 'Property Law Services' },
+      'Criminal': { iconType: 'CRIMINAL', serviceDesc: 'Criminal Defense Services' },
+      'Tax': { iconType: 'TAX', serviceDesc: 'Tax Law Services' },
+      'Family': { iconType: 'FAMILY_LAW', serviceDesc: 'Family Law Services' },
+      'Business': { iconType: 'BUSINESS', serviceDesc: 'Business Law Services' },
+      'Personal Injury': { iconType: 'PERSONAL_INJURY', serviceDesc: 'Personal Injury Services' },
+      'Civil Rights': { iconType: 'PEOPLE', serviceDesc: 'Civil Rights Services' },
+      'Immigration': { iconType: 'GLOBE', serviceDesc: 'Immigration Services' },
+      'Environmental': { iconType: 'LEAF', serviceDesc: 'Environmental Law Services' },
+      'Bankruptcy': { iconType: 'BRIEFCASE', serviceDesc: 'Bankruptcy Services' },
+      'Employment': { iconType: 'BRIEFCASE', serviceDesc: 'Employment Law Services' },
+      'Real Estate': { iconType: 'HOUSE', serviceDesc: 'Real Estate Services' },
+      'Estate Planning': { iconType: 'WILL', serviceDesc: 'Estate Planning Services' },
+      'Intellectual Property': { iconType: 'LIGHTBULB', serviceDesc: 'IP Law Services' },
+      'Contract': { iconType: 'DOC', serviceDesc: 'Contract Law Services' },
+      'Divorce': { iconType: 'HEART', serviceDesc: 'Divorce Services' },
+      'DUI': { iconType: 'CAR', serviceDesc: 'DUI Defense Services' },
+      'Workers Comp': { iconType: 'TOOLS', serviceDesc: 'Workers Compensation Services' },
+      'Medical Malpractice': { iconType: 'MEDICAL', serviceDesc: 'Medical Malpractice Services' },
+      'Securities': { iconType: 'CHART', serviceDesc: 'Securities Law Services' },
+      'Patent': { iconType: 'LIGHTBULB', serviceDesc: 'Patent Law Services' },
+      'Trademark': { iconType: 'TM', serviceDesc: 'Trademark Services' },
+      'Copyright': { iconType: 'COPY', serviceDesc: 'Copyright Services' },
+      'Corporate': { iconType: 'BUILDING', serviceDesc: 'Corporate Law Services' }
     };
 
-    const selectedCategoryData = categoryData[newSelectedCategory] || categoryData['Property'];
+    const currentLegalArea = legalAreaData[newSelectedCategory] || legalAreaData['Property'];
 
     return (
-      <View style={styles.confirmationContainer}>
+      <View style={styles.categorySelectionPageWrapper}>
         <StatusBar style="dark" />
         
-        {/* Background Overlay */}
-        <View style={styles.confirmationOverlay} />
-        
-        {/* Confirmation Card */}
-        <View style={styles.confirmationCard}>
-          {/* Header */}
-          <View style={styles.confirmationHeader}>
-            <Text style={styles.confirmationTitle}>Category Selected</Text>
-            <Text style={styles.confirmationSubtitle}>Services will update for this category</Text>
+        <ScrollView style={styles.categorySelectionScrollView} showsVerticalScrollIndicator={false}>
+          {/* Page Title Section */}
+          <View style={styles.categoryPageTitleSection}>
+            <Text style={styles.categoryPageMainTitle}>Category Selected</Text>
+            <Text style={styles.categoryPageSubTitle}>Services will update for this category</Text>
           </View>
 
-          {/* Category Display */}
-          <View style={styles.confirmationCategoryDisplay}>
-            <View style={styles.confirmationCategoryIcon}>
-              <ProfessionalIcon type={selectedCategoryData.icon} size={40} color="#2E4A6B" />
+          {/* Selected Category Display */}
+          <View style={styles.selectedCategoryShowcase}>
+            <View style={styles.categoryIconCircle}>
+              <ProfessionalIcon type={currentLegalArea.iconType} size={60} color="#2E4A6B" />
             </View>
-            <Text style={styles.confirmationCategoryName}>{newSelectedCategory}</Text>
-            <Text style={styles.confirmationCategoryDescription}>{selectedCategoryData.description}</Text>
+            <Text style={styles.selectedCategoryLabel}>{newSelectedCategory}</Text>
+            <Text style={styles.selectedCategoryDescription}>{currentLegalArea.serviceDesc}</Text>
           </View>
 
-          {/* Services Preview */}
-          <View style={styles.confirmationServicesPreview}>
-            <Text style={styles.confirmationServicesTitle}>Available Services:</Text>
-            <View style={styles.confirmationServicesList}>
-              {getServicesForCategory(newSelectedCategory).slice(0, 3).map((service, index) => (
-                <View key={index} style={styles.confirmationServiceItem}>
-                  <ProfessionalIcon type={service.icon} size={20} color="#2E4A6B" />
-                  <Text style={styles.confirmationServiceName}>{service.name}</Text>
+          {/* Available Services Section */}
+          <View style={styles.availableServicesSection}>
+            <Text style={styles.availableServicesHeading}>Available Services:</Text>
+            <View style={styles.servicesListContainer}>
+              {getServiceObjectsForCategory(newSelectedCategory).slice(0, 3).map((service, index) => (
+                <View key={index} style={styles.serviceItemRow}>
+                  <ProfessionalIcon type={service.icon} size={24} color="#2E4A6B" />
+                  <Text style={styles.serviceItemLabel}>{service.name}</Text>
                 </View>
               ))}
-              <Text style={styles.confirmationMoreServices}>+3 more services</Text>
+              <Text style={styles.moreServicesIndicator}>+3 more services</Text>
             </View>
           </View>
+        </ScrollView>
 
-          {/* Action Buttons */}
-          <View style={styles.confirmationButtons}>
+        {/* Bottom Action Buttons */}
+        <View style={styles.categoryPageActionButtons}>
             <TouchableOpacity 
-              style={styles.confirmationCancelButton}
+            style={styles.cancelSelectionButton}
               onPress={cancelCategorySelection}
             >
-              <Text style={styles.confirmationCancelText}>Cancel</Text>
+            <Text style={styles.cancelSelectionButtonText}>Cancel</Text>
             </TouchableOpacity>
             <TouchableOpacity 
-              style={styles.confirmationConfirmButton}
+            style={styles.confirmSelectionButton}
               onPress={confirmCategorySelection}
             >
-              <Text style={styles.confirmationConfirmText}>Confirm</Text>
+            <Text style={styles.confirmSelectionButtonText}>Confirm</Text>
             </TouchableOpacity>
-          </View>
         </View>
       </View>
     );
@@ -595,11 +1784,15 @@ export default function App() {
 
   const renderBookingDetailsScreen = () => {
     const handleReschedule = () => {
-      Alert.alert('Reschedule', 'Reschedule functionality will be implemented');
+      setRescheduleBooking(selectedBooking);
+      setRescheduleSelectedDate(null);
+      setRescheduleSelectedTimeSlot('');
+      setShowRescheduleBooking(true);
     };
 
     const handleCancel = () => {
-      Alert.alert(
+      showCustomAlert(
+        'confirm',
         'Cancel Booking',
         'Are you sure you want to cancel this booking?',
         [
@@ -648,7 +1841,7 @@ export default function App() {
             <View style={styles.bookingDetailsLawyerContent}>
               <View style={styles.bookingDetailsLawyerAvatar}>
                 {selectedBooking.lawyerProfileImage ? (
-                  <Image source={{ uri: selectedBooking.lawyerProfileImage }} style={styles.bookingDetailsLawyerProfileImage} />
+                  <Image source={selectedBooking.lawyerProfileImage} style={styles.bookingDetailsLawyerProfileImage} />
                 ) : (
                   <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
                 )}
@@ -659,7 +1852,9 @@ export default function App() {
                 <View style={styles.bookingDetailsLawyerStats}>
                   <View style={styles.bookingDetailsLawyerStat}>
                     <ProfessionalIcon type="STAR" size={16} color="#FFD700" />
-                    <Text style={styles.bookingDetailsLawyerStatText}>4.4</Text>
+                    <Text style={styles.bookingDetailsLawyerStatText}>
+                      {lawyerRatings[selectedBooking.lawyerName]?.rating || '4.4'}
+                    </Text>
                   </View>
                   <View style={styles.bookingDetailsLawyerStat}>
                     <ProfessionalIcon type="LOCATION" size={16} color="#2E4A6B" />
@@ -733,6 +1928,12 @@ export default function App() {
         {/* Action Buttons */}
         <View style={styles.bookingDetailsFooter}>
           <TouchableOpacity 
+            style={styles.rateLawyerButton}
+            onPress={() => setShowRatingPage(true)}
+          >
+            <Text style={styles.rateLawyerButtonText}>Rate Lawyer</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
             style={styles.rescheduleButton}
             onPress={handleReschedule}
           >
@@ -759,7 +1960,7 @@ export default function App() {
         id: '1',
         lawyerName: 'Lisa Wales',
         lawyerSpecialty: 'Criminal, Tax',
-        lawyerProfileImage: null,
+        lawyerProfileImage: require('./assets/images/lawyer/lawyer3.png'),
         date: '30.01.2021',
         time: '10:00-11:00AM',
         status: 'Confirmed'
@@ -768,7 +1969,7 @@ export default function App() {
         id: '2',
         lawyerName: 'Chris Young',
         lawyerSpecialty: 'Property, Criminal',
-        lawyerProfileImage: null,
+        lawyerProfileImage: require('./assets/images/lawyer/lawyer2.png'),
         date: '28.01.2021',
         time: '2:00-3:00PM',
         status: 'Pending'
@@ -777,7 +1978,7 @@ export default function App() {
         id: '3',
         lawyerName: 'Krisy Yolker',
         lawyerSpecialty: 'Tax, Civil Rights',
-        lawyerProfileImage: null,
+        lawyerProfileImage: require('./assets/images/lawyer/lawyer1.png'),
         date: '25.01.2021',
         time: '11:00-12:00PM',
         status: 'Confirmed'
@@ -786,7 +1987,7 @@ export default function App() {
         id: '4',
         lawyerName: 'Mathew Bairstow',
         lawyerSpecialty: 'Tax, Property',
-        lawyerProfileImage: null,
+        lawyerProfileImage: require('./assets/images/lawyer/lawyer4.png'),
         date: '22.01.2021',
         time: '9:00-10:00AM',
         status: 'Confirmed'
@@ -795,7 +1996,7 @@ export default function App() {
         id: '5',
         lawyerName: 'Andrew Clarke',
         lawyerSpecialty: 'Corporate',
-        lawyerProfileImage: null,
+        lawyerProfileImage: require('./assets/images/lawyer/lawyer6.png'),
         date: '20.01.2021',
         time: '3:00-4:00PM',
         status: 'Cancelled'
@@ -876,7 +2077,7 @@ export default function App() {
         </View>
 
         {/* Bookings List */}
-        <ScrollView style={styles.bookingsList} showsVerticalScrollIndicator={false}>
+        <ScrollView style={styles.bookingsList} showsVerticalScrollIndicator={false} contentContainerStyle={styles.bookingsListContent}>
           {filteredBookings.map((booking) => (
             <TouchableOpacity 
               key={booking.id} 
@@ -889,7 +2090,7 @@ export default function App() {
               <View style={styles.bookingContent}>
                 <View style={styles.bookingAvatar}>
                   {booking.lawyerProfileImage ? (
-                    <Image source={{ uri: booking.lawyerProfileImage }} style={styles.bookingProfileImage} />
+                    <Image source={booking.lawyerProfileImage} style={styles.bookingProfileImage} />
                   ) : (
                     <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
                   )}
@@ -911,6 +2112,34 @@ export default function App() {
             </TouchableOpacity>
           ))}
         </ScrollView>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              setShowBookings(false);
+              setCurrentScreen('home');
+            }}
+          >
+            <ProfessionalIcon type="HOME" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <ProfessionalIcon type="BOOKMARK" size={24} color="#2E4A6B" />
+            <Text style={styles.navTextActive}>Bookmarks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              setShowBookings(false);
+              setShowProfilePage(true);
+            }}
+          >
+            <ProfessionalIcon type="USER" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Profile</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -961,10 +2190,48 @@ export default function App() {
       setCurrentScreen('home');
     };
 
+    const handleViewBookingDetails = () => {
+      // Save the booking to user's bookings list
+      const newBooking = {
+        id: Date.now().toString(),
+        lawyerName: selectedLawyer?.name,
+        lawyerSpecialty: selectedLawyer?.specialty,
+        lawyerProfileImage: selectedLawyer?.profileImage,
+        date: `${selectedDate.toString().padStart(2, '0')}.${(currentMonth + 1).toString().padStart(2, '0')}.${currentYear}`,
+        time: getTimeDisplay(),
+        status: 'Confirmed',
+        bookingDate: new Date().toISOString(),
+        message: userMessage,
+        consultationType: consultationType
+      };
+      
+      setUserBookings(prev => [newBooking, ...prev]);
+      
+      // Set the selected booking and show booking details
+      setSelectedBooking(newBooking);
+      setShowAppointmentConfirmation(false);
+      setShowReviewBooking(false);
+      setShowAppointmentBooking(false);
+      setShowLawyerDetails(false);
+      setShowBookingDetails(true);
+    };
+
     return (
       <View style={styles.confirmationOverlay}>
         <View style={styles.confirmationContainer}>
           <StatusBar style="dark" />
+          
+          {/* Header */}
+          <View style={styles.confirmationPageHeader}>
+            <TouchableOpacity 
+              onPress={handleConfirmAppointment} 
+              style={styles.confirmationBackButton}
+            >
+              <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+            </TouchableOpacity>
+            <Text style={styles.confirmationPageTitle}>Booking Confirmed</Text>
+            <View style={styles.placeholder} />
+          </View>
           
           {/* Success Icon */}
           <View style={styles.confirmationIconContainer}>
@@ -1023,7 +2290,7 @@ export default function App() {
             
             <TouchableOpacity 
               style={styles.viewBookingDetailsButton}
-              onPress={handleConfirmAppointment}
+              onPress={handleViewBookingDetails}
             >
               <Text style={styles.viewBookingDetailsText}>View Booking Details</Text>
             </TouchableOpacity>
@@ -1116,7 +2383,7 @@ export default function App() {
             <View style={styles.lawyerInfoContent}>
               <View style={styles.lawyerInfoAvatar}>
                 {selectedLawyer?.profileImage ? (
-                  <Image source={{ uri: selectedLawyer.profileImage }} style={styles.lawyerInfoProfileImage} />
+                  <Image source={selectedLawyer.profileImage} style={styles.lawyerInfoProfileImage} />
                 ) : (
                   <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
                 )}
@@ -1618,7 +2885,7 @@ export default function App() {
       {/* Header */}
       <View style={styles.lawyerDetailsHeader}>
         <TouchableOpacity onPress={() => setShowLawyerDetails(false)} style={styles.lawyerDetailsBackButton}>
-          <Text style={styles.lawyerDetailsBackIcon}>←</Text>
+          <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
         </TouchableOpacity>
         <Text style={styles.lawyerDetailsTitle}>Lawyer Details</Text>
         <TouchableOpacity style={styles.lawyerDetailsFavorite}>
@@ -1632,7 +2899,7 @@ export default function App() {
           <View style={styles.lawyerProfileImageContainer}>
             <View style={styles.lawyerProfileImage}>
               {selectedLawyer?.profileImage ? (
-                <Image source={{ uri: selectedLawyer.profileImage }} style={styles.lawyerDetailProfileImage} />
+                <Image source={selectedLawyer.profileImage} style={styles.lawyerDetailProfileImage} />
               ) : (
                 <ProfessionalIcon type="USER" size={60} color="#ffffff" />
               )}
@@ -1765,7 +3032,7 @@ export default function App() {
       {/* Header */}
       <View style={styles.allLawyersHeader}>
         <TouchableOpacity onPress={() => setShowAllLawyers(false)} style={styles.backButton}>
-          <Text style={styles.backIcon}>←</Text>
+          <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
         </TouchableOpacity>
         <Text style={styles.allLawyersTitle}>All Lawyers</Text>
         <View style={styles.placeholder} />
@@ -1775,35 +3042,35 @@ export default function App() {
       <ScrollView style={styles.allLawyersScroll} showsVerticalScrollIndicator={false}>
         <View style={styles.allLawyersGrid}>
           {[
-            { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Chris Young', specialty: 'Criminal Law', rating: '4.7', avatar: null, profileImage: null },
-            { name: 'Lisa Wales', specialty: 'Tax Law', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'John Smith', specialty: 'Civil Law', rating: '4.6', avatar: null, profileImage: null },
-            { name: 'Sarah Johnson', specialty: 'Family Law', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Michael Chen', specialty: 'Business Law', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'Emily Rodriguez', specialty: 'Personal Injury', rating: '4.7', avatar: null, profileImage: null },
-            { name: 'David Thompson', specialty: 'Immigration', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Maria Garcia', specialty: 'Employment Law', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'Robert Brown', specialty: 'Estate Planning', rating: '4.6', avatar: null, profileImage: null },
-            { name: 'Jennifer Lee', specialty: 'Real Estate', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'Christopher Davis', specialty: 'Intellectual Property', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Amanda Taylor', specialty: 'DUI Defense', rating: '4.5', avatar: null, profileImage: null },
-            { name: 'Kevin Martinez', specialty: 'Medical Malpractice', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'Rachel Anderson', specialty: 'Workers Compensation', rating: '4.7', avatar: null, profileImage: null },
-            { name: 'Daniel Kim', specialty: 'Securities Law', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Nicole White', specialty: 'Patent Law', rating: '4.8', avatar: null, profileImage: null },
-            { name: 'Mark Thompson', specialty: 'Trademark Law', rating: '4.6', avatar: null, profileImage: null },
-            { name: 'Samantha Clark', specialty: 'Corporate Law', rating: '4.9', avatar: null, profileImage: null },
-            { name: 'Andrew Lewis', specialty: 'Environmental Law', rating: '4.7', avatar: null, profileImage: null }
+            { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer1.png') },
+            { name: 'Chris Young', specialty: 'Criminal Law', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer2.png') },
+            { name: 'Lisa Wales', specialty: 'Tax Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer3.png') },
+            { name: 'John Smith', specialty: 'Civil Law', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer4.png') },
+            { name: 'Sarah Johnson', specialty: 'Family Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer5.png') },
+            { name: 'Michael Chen', specialty: 'Business Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer6.png') },
+            { name: 'Emily Rodriguez', specialty: 'Personal Injury', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer7.png') },
+            { name: 'David Thompson', specialty: 'Immigration', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer8.png') },
+            { name: 'Maria Garcia', specialty: 'Employment Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer9.png') },
+            { name: 'Robert Brown', specialty: 'Estate Planning', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer10.png') },
+            { name: 'Jennifer Lee', specialty: 'Real Estate', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer11.png') },
+            { name: 'Christopher Davis', specialty: 'Intellectual Property', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer12.png') },
+            { name: 'Amanda Taylor', specialty: 'DUI Defense', rating: '4.5', avatar: null, profileImage: require('./assets/images/lawyer/lawyer13.png') },
+            { name: 'Kevin Martinez', specialty: 'Medical Malpractice', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer14.png') },
+            { name: 'Rachel Anderson', specialty: 'Workers Compensation', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer15.png') },
+            { name: 'Daniel Kim', specialty: 'Securities Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer16.png') },
+            { name: 'Nicole White', specialty: 'Patent Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer17.png') },
+            { name: 'Mark Thompson', specialty: 'Trademark Law', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer18.png') },
+            { name: 'Samantha Clark', specialty: 'Corporate Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer19.png') },
+            { name: 'Andrew Lewis', specialty: 'Environmental Law', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer20.png') }
             ].map((lawyer, index) => (
               <TouchableOpacity
                 key={index}
                 style={styles.allLawyerCard}
-                onPress={() => handleLawyerSelect(lawyer.name, lawyer.specialty, lawyer.rating, lawyer.avatar)}
+                onPress={() => handleLawyerSelect(lawyer.name, lawyer.specialty, lawyer.rating, lawyer.avatar, lawyer.profileImage)}
               >
               <View style={styles.allLawyerAvatar}>
                 {lawyer.profileImage ? (
-                  <Image source={{ uri: lawyer.profileImage }} style={styles.allLawyerProfileImage} />
+                  <Image source={lawyer.profileImage} style={styles.allLawyerProfileImage} />
                 ) : (
                   <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
                 )}
@@ -1828,7 +3095,7 @@ export default function App() {
       {/* Header */}
       <View style={styles.homeHeader}>
         <View style={styles.headerLeft}>
-          <Text style={styles.greeting}>Hi, User</Text>
+          <Text style={styles.greeting}>Hi, {userProfile.fullName.split(' ')[0]}</Text>
           <Text style={styles.headerSubtitle}>Find the right lawyer for your needs</Text>
         </View>
         <View style={styles.headerRight}>
@@ -1906,11 +3173,42 @@ export default function App() {
           </ScrollView>
         </View>
 
-        {/* Nearby Lawyers */}
+        {/* Lawyers / Law Firms Section */}
         <View style={styles.homeSection}>
           <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Nearby Lawyers</Text>
-            <TouchableOpacity onPress={handleSeeAllLawyers}>
+            <View style={styles.sectionTitleWithToggle}>
+              <View style={styles.homeToggleContainer}>
+                <TouchableOpacity
+                  style={[
+                    styles.homeToggleButton,
+                    homeSliderMode === 'lawyers' && styles.homeToggleButtonActive
+                  ]}
+                  onPress={() => setHomeSliderMode('lawyers')}
+                >
+                  <Text style={[
+                    styles.homeToggleText,
+                    homeSliderMode === 'lawyers' && styles.homeToggleTextActive
+                  ]}>
+                    Lawyers
+                  </Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[
+                    styles.homeToggleButton,
+                    homeSliderMode === 'lawfirms' && styles.homeToggleButtonActive
+                  ]}
+                  onPress={() => setHomeSliderMode('lawfirms')}
+                >
+                  <Text style={[
+                    styles.homeToggleText,
+                    homeSliderMode === 'lawfirms' && styles.homeToggleTextActive
+                  ]}>
+                    Law Firm
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+            <TouchableOpacity onPress={handleHomeSeeAll}>
               <Text style={styles.seeAll}>See All</Text>
             </TouchableOpacity>
           </View>
@@ -1920,27 +3218,29 @@ export default function App() {
             showsHorizontalScrollIndicator={false} 
             style={styles.lawyersScroll}
           >
-            {[
-              { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Chris Young', specialty: 'Criminal Law', rating: '4.7', avatar: null, profileImage: null },
-              { name: 'Lisa Wales', specialty: 'Tax Law', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'John Smith', specialty: 'Civil Law', rating: '4.6', avatar: null, profileImage: null },
-              { name: 'Sarah Johnson', specialty: 'Family Law', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Michael Chen', specialty: 'Business Law', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'Emily Rodriguez', specialty: 'Personal Injury', rating: '4.7', avatar: null, profileImage: null },
-              { name: 'David Thompson', specialty: 'Immigration', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Maria Garcia', specialty: 'Employment Law', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'Robert Brown', specialty: 'Estate Planning', rating: '4.6', avatar: null, profileImage: null },
-              { name: 'Jennifer Lee', specialty: 'Real Estate', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'Christopher Davis', specialty: 'Intellectual Property', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Amanda Taylor', specialty: 'DUI Defense', rating: '4.5', avatar: null, profileImage: null },
-              { name: 'Kevin Martinez', specialty: 'Medical Malpractice', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'Rachel Anderson', specialty: 'Workers Compensation', rating: '4.7', avatar: null, profileImage: null },
-              { name: 'Daniel Kim', specialty: 'Securities Law', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Nicole White', specialty: 'Patent Law', rating: '4.8', avatar: null, profileImage: null },
-              { name: 'Mark Thompson', specialty: 'Trademark Law', rating: '4.6', avatar: null, profileImage: null },
-              { name: 'Samantha Clark', specialty: 'Corporate Law', rating: '4.9', avatar: null, profileImage: null },
-              { name: 'Andrew Lewis', specialty: 'Environmental Law', rating: '4.7', avatar: null, profileImage: null }
+            {homeSliderMode === 'lawyers' ? (
+              // Lawyers Data
+              [
+              { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer1.png') },
+              { name: 'Chris Young', specialty: 'Criminal Law', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer2.png') },
+              { name: 'Lisa Wales', specialty: 'Tax Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer3.png') },
+              { name: 'John Smith', specialty: 'Civil Law', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer4.png') },
+              { name: 'Sarah Johnson', specialty: 'Family Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer5.png') },
+              { name: 'Michael Chen', specialty: 'Business Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer6.png') },
+              { name: 'Emily Rodriguez', specialty: 'Personal Injury', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer7.png') },
+              { name: 'David Thompson', specialty: 'Immigration', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer8.png') },
+              { name: 'Maria Garcia', specialty: 'Employment Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer9.png') },
+              { name: 'Robert Brown', specialty: 'Estate Planning', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer10.png') },
+              { name: 'Jennifer Lee', specialty: 'Real Estate', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer11.png') },
+              { name: 'Christopher Davis', specialty: 'Intellectual Property', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer12.png') },
+              { name: 'Amanda Taylor', specialty: 'DUI Defense', rating: '4.5', avatar: null, profileImage: require('./assets/images/lawyer/lawyer13.png') },
+              { name: 'Kevin Martinez', specialty: 'Medical Malpractice', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer14.png') },
+              { name: 'Rachel Anderson', specialty: 'Workers Compensation', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer15.png') },
+              { name: 'Daniel Kim', specialty: 'Securities Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer16.png') },
+              { name: 'Nicole White', specialty: 'Patent Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer17.png') },
+              { name: 'Mark Thompson', specialty: 'Trademark Law', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer18.png') },
+              { name: 'Samantha Clark', specialty: 'Corporate Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer19.png') },
+              { name: 'Andrew Lewis', specialty: 'Environmental Law', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer20.png') }
             ].map((lawyer, index) => (
               <TouchableOpacity 
                 key={index} 
@@ -1949,7 +3249,7 @@ export default function App() {
               >
                 <View style={styles.lawyerAvatar}>
                   {lawyer.profileImage ? (
-                    <Image source={{ uri: lawyer.profileImage }} style={styles.lawyerProfileImage} />
+                    <Image source={lawyer.profileImage} style={styles.lawyerProfileImage} />
                   ) : (
                     <ProfessionalIcon type="USER" size={30} color="#2E4A6B" />
                   )}
@@ -1961,7 +3261,39 @@ export default function App() {
                   <Text style={styles.ratingText}>{lawyer.rating}</Text>
                 </View>
               </TouchableOpacity>
-            ))}
+              ))
+            ) : (
+              // Law Firms Data
+              [
+                { id: '1', name: 'Johnson & Associates', specialty: 'Corporate Law', rating: '4.8', lawyers: 15, location: '2.1 km', image: require('./assets/images/lawfirm/lawfirm19.png') },
+                { id: '2', name: 'Smith Legal Services', specialty: 'Criminal Defense', rating: '4.6', lawyers: 8, location: '1.5 km', image: require('./assets/images/lawfirm/lawfirm20.png') },
+                { id: '3', name: 'Williams & Partners', specialty: 'Family Law', rating: '4.9', lawyers: 22, location: '3.2 km', image: require('./assets/images/lawfirm/lawfirm21.png') },
+                { id: '4', name: 'Davis Legal Group', specialty: 'Personal Injury', rating: '4.7', lawyers: 12, location: '2.8 km', image: require('./assets/images/lawfirm/lawfirm22.png') },
+                { id: '5', name: 'Brown & Co Law Office', specialty: 'Real Estate', rating: '4.5', lawyers: 6, location: '1.9 km', image: require('./assets/images/lawfirm/lawfirm1.png') },
+                { id: '6', name: 'Miller Legal Consultants', specialty: 'Business Law', rating: '4.8', lawyers: 18, location: '2.5 km', image: require('./assets/images/lawfirm/lawfirm2.png') },
+                { id: '7', name: 'Wilson Law Corporation', specialty: 'Immigration', rating: '4.4', lawyers: 10, location: '3.5 km', image: require('./assets/images/lawfirm/lawfirm3.png') },
+                { id: '8', name: 'Anderson Legal Solutions', specialty: 'Tax Law', rating: '4.7', lawyers: 14, location: '2.3 km', image: require('./assets/images/lawfirm/lawfirm4.png') },
+                { id: '9', name: 'Taylor & Associates', specialty: 'Employment Law', rating: '4.6', lawyers: 9, location: '1.8 km', image: require('./assets/images/lawfirm/lawfirm5.png') },
+                { id: '10', name: 'Roberts Law Firm', specialty: 'Intellectual Property', rating: '4.9', lawyers: 16, location: '1.9 km', image: require('./assets/images/lawfirm/lawfirm6.png') }
+              ].map((firm, index) => (
+                <TouchableOpacity 
+                  key={index} 
+                  style={styles.homeLawFirmCard}
+                  onPress={() => handleHomeLawFirmClick(firm)}
+                >
+                  <View style={styles.lawFirmAvatar}>
+                    <Image source={firm.image} style={styles.lawFirmProfileImage} />
+                  </View>
+                  <Text style={styles.lawFirmName}>{firm.name}</Text>
+                  <Text style={styles.lawFirmSpecialty}>{firm.specialty}</Text>
+                  <View style={styles.lawFirmRating}>
+                    <Text style={styles.stars}>⭐⭐⭐⭐⭐</Text>
+                    <Text style={styles.ratingText}>{firm.rating}</Text>
+                  </View>
+                  <Text style={styles.lawFirmLawyers}>{firm.lawyers} lawyers</Text>
+                </TouchableOpacity>
+              ))
+            )}
           </ScrollView>
         </View>
 
@@ -1969,7 +3301,7 @@ export default function App() {
         <View style={styles.homeSection}>
           <Text style={styles.sectionTitle}>Services</Text>
           <View style={styles.servicesGrid}>
-            {getServicesForCategory(selectedCategory).map((service, index) => (
+            {getServiceObjectsForCategory(selectedCategory).map((service, index) => (
               <TouchableOpacity 
                 key={index} 
                 style={styles.serviceCard}
@@ -1997,7 +3329,10 @@ export default function App() {
           <ProfessionalIcon type="BOOKMARK" size={24} color="#6c757d" />
           <Text style={styles.navText}>Bookmarks</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.navItem}>
+        <TouchableOpacity 
+          style={styles.navItem}
+          onPress={() => setShowProfilePage(true)}
+        >
           <ProfessionalIcon type="USER" size={24} color="#6c757d" />
           <Text style={styles.navText}>Profile</Text>
         </TouchableOpacity>
@@ -2005,44 +3340,2733 @@ export default function App() {
     </View>
   );
 
+  const renderRatingPage = () => {
+    const currentLawyer = selectedBooking?.lawyerName || 'Mathew Bairstow';
+    const currentLawyerRating = lawyerRatings[currentLawyer] || { rating: 4.4, reviewCount: 127 };
+    
+    const handleStarPress = (rating) => {
+      setUserRating(rating);
+    };
+
+    const handleSubmitReview = () => {
+      if (userRating === 0) {
+        Alert.alert('Rating Required', 'Please select a star rating before submitting your review.');
+        return;
+      }
+      
+      // Update lawyer's rating (simple average calculation)
+      const newReviewCount = currentLawyerRating.reviewCount + 1;
+      const newRating = ((currentLawyerRating.rating * currentLawyerRating.reviewCount) + userRating) / newReviewCount;
+      
+      setLawyerRatings(prev => ({
+        ...prev,
+        [currentLawyer]: {
+          rating: Math.round(newRating * 10) / 10, // Round to 1 decimal place
+          reviewCount: newReviewCount
+        }
+      }));
+      
+      showCustomAlert(
+        'success',
+        'Review Submitted!',
+        'Thank you for your feedback. Your review has been submitted successfully.',
+        [
+          {
+            text: 'OK',
+            style: 'primary',
+            onPress: () => {
+              setShowRatingPage(false);
+              setUserRating(0);
+              setUserReview('');
+            }
+          }
+        ]
+      );
+    };
+
+    return (
+      <View style={styles.ratingContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.ratingHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowRatingPage(false)} 
+            style={styles.ratingBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.ratingTitle}>Booking Details</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.ratingContent} showsVerticalScrollIndicator={false}>
+          {/* Lawyer Information Card */}
+          <View style={styles.ratingLawyerCard}>
+            <View style={styles.ratingLawyerContent}>
+              <View style={styles.ratingLawyerAvatar}>
+                {selectedBooking?.lawyerProfileImage ? (
+                  <Image source={selectedBooking.lawyerProfileImage} style={styles.ratingLawyerProfileImage} />
+                ) : (
+                  <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
+                )}
+              </View>
+              <View style={styles.ratingLawyerInfo}>
+                <Text style={styles.ratingLawyerName}>{currentLawyer}</Text>
+                <Text style={styles.ratingLawyerSpecialty}>{selectedBooking?.lawyerSpecialty || 'Tax, Property'}</Text>
+                <View style={styles.ratingLawyerStats}>
+                  <View style={styles.ratingLawyerStat}>
+                    <ProfessionalIcon type="STAR" size={16} color="#FFD700" />
+                    <Text style={styles.ratingLawyerStatText}>{currentLawyerRating.rating}</Text>
+                  </View>
+                  <View style={styles.ratingLawyerStat}>
+                    <ProfessionalIcon type="LOCATION" size={16} color="#2E4A6B" />
+                    <Text style={styles.ratingLawyerStatText}>1.5 km</Text>
+                  </View>
+                  <View style={styles.ratingLawyerStat}>
+                    <ProfessionalIcon type="DOLLAR" size={16} color="#2E4A6B" />
+                    <Text style={styles.ratingLawyerStatText}>$16/hr</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Consultation Details */}
+          <View style={styles.ratingConsultationCard}>
+            <Text style={styles.ratingConsultationTitle}>
+              {selectedBooking?.consultationType === 'online' ? 'Online Consultation' : 
+               selectedBooking?.consultationType === 'lawyer_place' ? 'Meet at Lawyer\'s place' : 
+               'Suggest your time'}
+            </Text>
+            <View style={styles.ratingConsultationList}>
+              <View style={styles.ratingConsultationRow}>
+                <Text style={styles.ratingConsultationLabel}>Date:</Text>
+                <Text style={styles.ratingConsultationValue}>{selectedBooking?.date || '19.07.2021'}</Text>
+              </View>
+              <View style={styles.ratingConsultationRow}>
+                <Text style={styles.ratingConsultationLabel}>Time Slot:</Text>
+                <Text style={styles.ratingConsultationValue}>{selectedBooking?.time || '10AM - 11AM'}</Text>
+              </View>
+              <View style={styles.ratingConsultationRow}>
+                <Text style={styles.ratingConsultationLabel}>Total:</Text>
+                <Text style={styles.ratingConsultationValue}>$15:15</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Feedback Section */}
+          <View style={styles.ratingFeedbackCard}>
+            <Text style={styles.ratingFeedbackTitle}>How was the experience?</Text>
+            <Text style={styles.ratingFeedbackSubtitle}>Share your valuable feedback to help others</Text>
+            
+            <Text style={styles.ratingMessageLabel}>Your message</Text>
+            <TextInput
+              style={styles.ratingMessageInput}
+              placeholder="Share your experience..."
+              value={userReview}
+              onChangeText={setUserReview}
+              multiline
+              numberOfLines={4}
+              textAlignVertical="top"
+            />
+            
+            <View style={styles.ratingUploadSection}>
+              <Text style={styles.ratingUploadLabel}>Upload Doc</Text>
+              <View style={styles.ratingUploadField}>
+                <ProfessionalIcon type="PAPERCLIP" size={16} color="#6c757d" />
+              </View>
+            </View>
+          </View>
+
+          {/* Rating Section */}
+          <View style={styles.ratingStarsCard}>
+            <Text style={styles.ratingStarsTitle}>Rate your experience</Text>
+            <View style={styles.ratingStarsContainer}>
+              {[1, 2, 3, 4, 5].map((star) => (
+                <TouchableOpacity
+                  key={star}
+                  onPress={() => handleStarPress(star)}
+                  style={styles.ratingStarButton}
+                >
+                  <ProfessionalIcon 
+                    type="STAR" 
+                    size={32} 
+                    color={star <= userRating ? "#FFD700" : "#E0E0E0"} 
+                  />
+                </TouchableOpacity>
+              ))}
+            </View>
+            {userRating > 0 && (
+              <Text style={styles.ratingSelectedText}>
+                {userRating} star{userRating > 1 ? 's' : ''} selected
+              </Text>
+            )}
+          </View>
+        </ScrollView>
+
+        {/* Submit Button */}
+        <View style={styles.ratingFooter}>
+          <TouchableOpacity 
+            style={styles.ratingSubmitButton}
+            onPress={handleSubmitReview}
+          >
+            <Text style={styles.ratingSubmitText}>Submit Review</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderUserProfilePage = () => {
+    const handleLogout = () => {
+      setShowLogoutConfirmation(true);
+    };
+
+    return (
+      <View style={styles.userProfilePageContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.userProfilePageHeader}>
+          <Text style={styles.userProfilePageTitle}>Profile</Text>
+        </View>
+
+        <ScrollView style={styles.userProfilePageContent} showsVerticalScrollIndicator={false}>
+          {/* User Info Card */}
+          <View style={styles.userProfileInfoCard}>
+            <View style={styles.userProfileAvatarContainer}>
+              <View style={styles.userProfileAvatar}>
+                {userProfile.profilePicture ? (
+                  <Image 
+                    source={userProfile.profilePicture}
+                    style={styles.userProfileAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <ProfessionalIcon type="USER" size={40} color="#ffffff" />
+                )}
+              </View>
+            </View>
+            <Text style={styles.userProfileName}>{userProfile.fullName}</Text>
+            <View style={styles.userProfileContactInfo}>
+              <View style={styles.userProfileContactItem}>
+                <ProfessionalIcon type="EMAIL" size={20} color="#ffffff" />
+                <Text style={styles.userProfileContactText}>{userProfile.email}</Text>
+              </View>
+              <View style={styles.userProfileContactItem}>
+                <ProfessionalIcon type="PHONE" size={20} color="#ffffff" />
+                <Text style={styles.userProfileContactText}>{userProfile.phone}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Menu Options */}
+          <View style={styles.userProfileMenuSection}>
+            <TouchableOpacity 
+              style={styles.userProfileMenuItem}
+              onPress={() => setShowEditProfile(true)}
+            >
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="EDIT" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>Manage Profile</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.userProfileMenuItem}>
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="BRIEFCASE" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>All Payments</Text>
+              </View>
+              <View style={styles.userProfileComingSoonBadge}>
+                <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.userProfileMenuItem}>
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="CHECKMARK" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>Manage Payment</Text>
+              </View>
+              <View style={styles.userProfileComingSoonBadge}>
+                <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.userProfileMenuItem}>
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="LOCATION" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>Edit Address</Text>
+              </View>
+              <View style={styles.userProfileComingSoonBadge}>
+                <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.userProfileMenuItem}>
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="SETTINGS" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>Settings</Text>
+              </View>
+              <View style={styles.userProfileComingSoonBadge}>
+                <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
+              </View>
+            </TouchableOpacity>
+
+            <TouchableOpacity style={styles.userProfileMenuItem} onPress={handleLogout}>
+              <View style={styles.userProfileMenuItemLeft}>
+                <ProfessionalIcon type="LOGOUT" size={24} color="#2E4A6B" />
+                <Text style={styles.userProfileMenuItemText}>Logout</Text>
+              </View>
+            </TouchableOpacity>
+          </View>
+        </ScrollView>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => setShowProfilePage(false)}
+          >
+            <ProfessionalIcon type="HOME" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              setShowProfilePage(false);
+              setShowBookings(true);
+            }}
+          >
+            <ProfessionalIcon type="BOOKMARK" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Bookmarks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={styles.navItem}>
+            <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
+            <Text style={styles.navTextActive}>Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const handleProfileFieldChange = (field, value) => {
+    setEditedProfile(prev => ({
+      ...prev,
+      [field]: value
+    }));
+    setHasProfileChanges(true);
+  };
+
+  const handleSaveProfile = () => {
+    setUserProfile(editedProfile);
+    setHasProfileChanges(false);
+    showCustomAlert(
+      'success',
+      'Profile Updated!',
+      'Your profile information has been saved successfully.',
+      [
+        {
+          text: 'OK',
+          style: 'primary',
+          onPress: () => setShowEditProfile(false)
+        }
+      ]
+    );
+  };
+
+  const handleDiscardProfileChanges = () => {
+    if (hasProfileChanges) {
+      showCustomAlert(
+        'confirm',
+        'Discard Changes?',
+        'You have unsaved changes. Are you sure you want to discard them?',
+        [
+          { text: 'Keep Editing', style: 'cancel' },
+          { 
+            text: 'Discard', 
+            style: 'destructive',
+            onPress: () => {
+              setEditedProfile(userProfile);
+              setHasProfileChanges(false);
+              setShowEditProfile(false);
+            }
+          }
+        ]
+      );
+    } else {
+      setShowEditProfile(false);
+    }
+  };
+
+  const handleChangeProfilePicture = () => {
+    showCustomAlert(
+      'confirm',
+      'Change Profile Picture',
+      'Choose how you want to update your profile picture:',
+      [
+        { 
+          text: 'Camera', 
+          style: 'primary',
+          onPress: () => handleTakePhoto()
+        },
+        { 
+          text: 'Gallery', 
+          style: 'primary',
+          onPress: () => handleSelectFromGallery()
+        },
+        { 
+          text: 'Remove Photo', 
+          style: 'destructive',
+          onPress: () => handleRemovePhoto()
+        },
+        { text: 'Cancel', style: 'cancel' }
+      ]
+    );
+  };
+
+  const handleTakePhoto = () => {
+    // Demo implementation - in real app, use expo-image-picker
+    const demoImages = [
+      require('./assets/images/numbered/1.jpg'),
+      require('./assets/images/numbered/3.jpg'),
+      require('./assets/images/numbered/5.jpg')
+    ];
+    const randomImage = demoImages[Math.floor(Math.random() * demoImages.length)];
+    
+    setEditedProfile(prev => ({
+      ...prev,
+      profilePicture: randomImage
+    }));
+    setHasProfileChanges(true);
+    
+    showCustomAlert(
+      'success',
+      'Photo Captured!',
+      'Your profile picture has been updated.',
+      [{ text: 'OK', style: 'primary' }]
+    );
+  };
+
+  const handleSelectFromGallery = () => {
+    // Demo implementation - in real app, use expo-image-picker
+    const demoImages = [
+      require('./assets/images/numbered/2.jpg'),
+      require('./assets/images/numbered/4.jpg'),
+      require('./assets/images/numbered/6.png'),
+      require('./assets/images/numbered/8.png')
+    ];
+    const randomImage = demoImages[Math.floor(Math.random() * demoImages.length)];
+    
+    setEditedProfile(prev => ({
+      ...prev,
+      profilePicture: randomImage
+    }));
+    setHasProfileChanges(true);
+    
+    showCustomAlert(
+      'success',
+      'Photo Selected!',
+      'Your profile picture has been updated from gallery.',
+      [{ text: 'OK', style: 'primary' }]
+    );
+  };
+
+  const handleRemovePhoto = () => {
+    setEditedProfile(prev => ({
+      ...prev,
+      profilePicture: null
+    }));
+    setHasProfileChanges(true);
+    
+    showCustomAlert(
+      'success',
+      'Photo Removed!',
+      'Your profile picture has been removed.',
+      [{ text: 'OK', style: 'primary' }]
+    );
+  };
+
+  const renderEditProfilePage = () => {
+
+    return (
+      <View style={styles.editProfileContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.editProfileHeader}>
+          <TouchableOpacity
+            onPress={handleDiscardProfileChanges}
+            style={styles.editProfileBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.editProfileTitle}>Edit Profile</Text>
+          <TouchableOpacity 
+            style={[
+              styles.editProfileSaveButton,
+              !hasProfileChanges && styles.editProfileSaveButtonDisabled
+            ]}
+            onPress={handleSaveProfile}
+            disabled={!hasProfileChanges}
+          >
+            <Text style={[
+              styles.editProfileSaveText,
+              !hasProfileChanges && styles.editProfileSaveTextDisabled
+            ]}>
+              Save
+            </Text>
+          </TouchableOpacity>
+        </View>
+
+        <ScrollView style={styles.editProfileContent} showsVerticalScrollIndicator={false}>
+          {/* Profile Photo Section */}
+          <View style={styles.editProfilePhotoSection}>
+            <View style={styles.editProfilePhotoContainer}>
+              <View style={styles.editProfileAvatar}>
+                {editedProfile.profilePicture ? (
+                  <Image 
+                    source={editedProfile.profilePicture}
+                    style={styles.editProfileAvatarImage}
+                    resizeMode="cover"
+                  />
+                ) : (
+                  <ProfessionalIcon type="USER" size={32} color="#ffffff" />
+                )}
+              </View>
+            </View>
+            <TouchableOpacity 
+              style={styles.editProfileChangePhotoButton}
+              onPress={handleChangeProfilePicture}
+            >
+              <ProfessionalIcon type="CHECKMARK" size={14} color="#2E4A6B" />
+              <Text style={styles.editProfileChangePhotoText}>Change Photo</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Personal Information */}
+          <View style={styles.editProfileSection}>
+            <View style={styles.editProfileSectionHeader}>
+              <ProfessionalIcon type="USER" size={18} color="#2E4A6B" />
+              <Text style={styles.editProfileSectionTitle}>Personal Information</Text>
+            </View>
+            
+            <View style={styles.editProfileFormRow}>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>Full Name</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.fullName}
+                  onChangeText={(value) => handleProfileFieldChange('fullName', value)}
+                  placeholder="Enter full name"
+                />
+              </View>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>Email Address</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.email}
+                  onChangeText={(value) => handleProfileFieldChange('email', value)}
+                  placeholder="Enter email"
+                  keyboardType="email-address"
+                />
+              </View>
+            </View>
+
+            <View style={styles.editProfileFormRow}>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>Phone Number</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.phone}
+                  onChangeText={(value) => handleProfileFieldChange('phone', value)}
+                  placeholder="Enter phone number"
+                  keyboardType="phone-pad"
+                />
+              </View>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>Date of Birth</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.dateOfBirth}
+                  onChangeText={(value) => handleProfileFieldChange('dateOfBirth', value)}
+                  placeholder="DD/MM/YYYY"
+                />
+              </View>
+            </View>
+          </View>
+
+          {/* Address Information */}
+          <View style={styles.editProfileSection}>
+            <View style={styles.editProfileSectionHeader}>
+              <ProfessionalIcon type="LOCATION" size={18} color="#2E4A6B" />
+              <Text style={styles.editProfileSectionTitle}>Address Information</Text>
+            </View>
+            
+            <View style={styles.editProfileFormField}>
+              <Text style={styles.editProfileFieldLabel}>Street Address</Text>
+              <TextInput
+                style={styles.editProfileTextInput}
+                value={editedProfile.streetAddress}
+                onChangeText={(value) => handleProfileFieldChange('streetAddress', value)}
+                placeholder="Enter street address"
+              />
+            </View>
+
+            <View style={styles.editProfileFormRow}>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>City</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.city}
+                  onChangeText={(value) => handleProfileFieldChange('city', value)}
+                  placeholder="Enter city"
+                />
+              </View>
+              <View style={styles.editProfileFormField}>
+                <Text style={styles.editProfileFieldLabel}>State</Text>
+                <TextInput
+                  style={styles.editProfileTextInput}
+                  value={editedProfile.state}
+                  onChangeText={(value) => handleProfileFieldChange('state', value)}
+                  placeholder="Enter state"
+                />
+              </View>
+            </View>
+
+            <View style={styles.editProfileFormField}>
+              <Text style={styles.editProfileFieldLabel}>ZIP Code</Text>
+              <TextInput
+                style={styles.editProfileTextInput}
+                value={editedProfile.zipCode}
+                onChangeText={(value) => handleProfileFieldChange('zipCode', value)}
+                placeholder="Enter ZIP code"
+                keyboardType="numeric"
+              />
+            </View>
+          </View>
+
+          {/* Changes Indicator */}
+          {hasProfileChanges && (
+            <View style={styles.editProfileChangesIndicator}>
+              <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+              <Text style={styles.editProfileChangesText}>You have unsaved changes</Text>
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={handleDiscardProfileChanges}
+          >
+            <ProfessionalIcon type="HOME" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              handleDiscardProfileChanges();
+              setShowBookings(true);
+            }}
+          >
+            <ProfessionalIcon type="BOOKMARK" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Bookmarks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              handleDiscardProfileChanges();
+              setShowProfilePage(true);
+            }}
+          >
+            <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
+            <Text style={styles.navTextActive}>Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLogoutConfirmationPage = () => {
+    const handleConfirmLogout = () => {
+      setShowLogoutConfirmation(false);
+      setShowProfilePage(false);
+      setCurrentScreen('login');
+    };
+
+    const handleCancelLogout = () => {
+      setShowLogoutConfirmation(false);
+    };
+
+    return (
+      <View style={styles.logoutConfirmationContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.logoutConfirmationHeader}>
+          <TouchableOpacity
+            onPress={handleCancelLogout}
+            style={styles.logoutConfirmationBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.logoutConfirmationTitle}>Logout</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.logoutConfirmationContent} showsVerticalScrollIndicator={false}>
+          {/* Logout Icon */}
+          <View style={styles.logoutConfirmationIconContainer}>
+            <View style={styles.logoutConfirmationIconCircle}>
+              <ProfessionalIcon type="LOGOUT" size={40} color="#2E4A6B" />
+            </View>
+          </View>
+
+          {/* Confirmation Message */}
+          <View style={styles.logoutConfirmationMessageSection}>
+            <Text style={styles.logoutConfirmationMainText}>Are you sure you want to logout?</Text>
+            <Text style={styles.logoutConfirmationSubText}>
+              You will need to sign in again to access your account and bookings.
+            </Text>
+          </View>
+
+          {/* Account Summary */}
+          <View style={styles.logoutConfirmationSummarySection}>
+            <Text style={styles.logoutConfirmationSummaryTitle}>Account Summary</Text>
+            
+            <View style={styles.logoutConfirmationSummaryItem}>
+              <Text style={styles.logoutConfirmationSummaryLabel}>Total Bookings:</Text>
+              <Text style={styles.logoutConfirmationSummaryValue}>5</Text>
+            </View>
+            
+            <View style={styles.logoutConfirmationSummaryItem}>
+              <Text style={styles.logoutConfirmationSummaryLabel}>Active Consultations:</Text>
+              <Text style={styles.logoutConfirmationSummaryValue}>2</Text>
+            </View>
+            
+            <View style={styles.logoutConfirmationSummaryItem}>
+              <Text style={styles.logoutConfirmationSummaryLabel}>Member Since:</Text>
+              <Text style={styles.logoutConfirmationSummaryValue}>Jan 2024</Text>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Action Buttons */}
+        <View style={styles.logoutConfirmationButtonsSection}>
+          <TouchableOpacity
+            style={styles.logoutConfirmationCancelButton}
+            onPress={handleCancelLogout}
+          >
+            <Text style={styles.logoutConfirmationCancelButtonText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.logoutConfirmationLogoutButton}
+            onPress={handleConfirmLogout}
+          >
+            <Text style={styles.logoutConfirmationLogoutButtonText}>Yes, Logout</Text>
+          </TouchableOpacity>
+        </View>
+
+        {/* Bottom Navigation */}
+        <View style={styles.bottomNav}>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={handleCancelLogout}
+          >
+            <ProfessionalIcon type="HOME" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Home</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              setShowLogoutConfirmation(false);
+              setShowBookings(true);
+            }}
+          >
+            <ProfessionalIcon type="BOOKMARK" size={24} color="#6c757d" />
+            <Text style={styles.navText}>Bookmarks</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.navItem}
+            onPress={() => {
+              setShowLogoutConfirmation(false);
+              setShowProfilePage(true);
+            }}
+          >
+            <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
+            <Text style={styles.navTextActive}>Profile</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderCustomModal = () => {
+    if (!showCustomModal) return null;
+
+    const getModalIcon = () => {
+      switch (modalConfig.type) {
+        case 'success':
+          return <ProfessionalIcon type="CHECKMARK" size={48} color="#28a745" />;
+        case 'warning':
+          return <ProfessionalIcon type="WARNING" size={48} color="#ffc107" />;
+        case 'confirm':
+          return <ProfessionalIcon type="HELP" size={48} color="#dc3545" />;
+        default:
+          return <ProfessionalIcon type="CHECKMARK" size={48} color="#28a745" />;
+      }
+    };
+
+    const getModalColor = () => {
+      switch (modalConfig.type) {
+        case 'success':
+          return '#28a745';
+        case 'warning':
+          return '#ffc107';
+        case 'confirm':
+          return '#dc3545';
+        default:
+          return '#28a745';
+      }
+    };
+
+    return (
+      <View style={styles.customModalOverlay}>
+        <View style={styles.customModalContainer}>
+          {/* Modal Icon */}
+          <View style={[styles.customModalIconContainer, { backgroundColor: `${getModalColor()}20` }]}>
+            {getModalIcon()}
+          </View>
+
+          {/* Modal Content */}
+          <View style={styles.customModalContent}>
+            <Text style={styles.customModalTitle}>{modalConfig.title}</Text>
+            <Text style={styles.customModalMessage}>{modalConfig.message}</Text>
+          </View>
+
+          {/* Modal Buttons */}
+          <View style={styles.customModalButtonsContainer}>
+            {modalConfig.buttons.map((button, index) => (
+              <TouchableOpacity
+                key={index}
+                style={[
+                  styles.customModalButton,
+                  button.style === 'destructive' ? styles.customModalButtonDestructive :
+                  button.style === 'cancel' ? styles.customModalButtonCancel :
+                  styles.customModalButtonPrimary
+                ]}
+                onPress={() => {
+                  setShowCustomModal(false);
+                  if (button.onPress) button.onPress();
+                }}
+              >
+                <Text style={[
+                  styles.customModalButtonText,
+                  button.style === 'destructive' ? styles.customModalButtonTextDestructive :
+                  button.style === 'cancel' ? styles.customModalButtonTextCancel :
+                  styles.customModalButtonTextPrimary
+                ]}>
+                  {button.text}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
+      </View>
+    );
+  };
+
+  const renderRescheduleBookingScreen = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const timeSlots = [
+      '9:00 AM - 10:00 AM',
+      '10:00 AM - 11:00 AM', 
+      '11:00 AM - 12:00 PM',
+      '2:00 PM - 3:00 PM',
+      '3:00 PM - 4:00 PM',
+      '4:00 PM - 5:00 PM'
+    ];
+
+    const getDaysInMonth = (month, year) => {
+      return new Date(year, month + 1, 0).getDate();
+    };
+
+    const getFirstDayOfMonth = (month, year) => {
+      return new Date(year, month, 1).getDay();
+    };
+
+    const handleDateSelect = (day) => {
+      setRescheduleSelectedDate(day);
+    };
+
+    const handleTimeSlotSelect = (timeSlot) => {
+      setRescheduleSelectedTimeSlot(timeSlot);
+    };
+
+    const handleConfirmReschedule = () => {
+      if (!rescheduleSelectedDate || !rescheduleSelectedTimeSlot) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please select both a new date and time slot for your booking.',
+          [
+            { text: 'OK', style: 'primary' }
+          ]
+        );
+        return;
+      }
+
+      // Update the booking with new date and time
+      const updatedBooking = {
+        ...rescheduleBooking,
+        date: `${rescheduleSelectedDate.toString().padStart(2, '0')}.${(currentMonth + 1).toString().padStart(2, '0')}.${currentYear}`,
+        time: rescheduleSelectedTimeSlot
+      };
+
+      // Update in userBookings array
+      setUserBookings(prev => 
+        prev.map(booking => 
+          booking.id === rescheduleBooking.id 
+            ? updatedBooking
+            : booking
+        )
+      );
+
+      // Update selectedBooking if it's the same one
+      if (selectedBooking && selectedBooking.id === rescheduleBooking.id) {
+        setSelectedBooking(updatedBooking);
+      }
+
+      showCustomAlert(
+        'success',
+        'Booking Rescheduled!',
+        'Your booking has been successfully rescheduled. You will receive a confirmation email shortly.',
+        [
+          {
+            text: 'OK',
+            style: 'primary',
+            onPress: () => {
+              setShowRescheduleBooking(false);
+              setShowBookingDetails(true);
+            }
+          }
+        ]
+      );
+    };
+
+    const renderCalendar = () => {
+      const daysInMonth = getDaysInMonth(currentMonth, currentYear);
+      const firstDay = getFirstDayOfMonth(currentMonth, currentYear);
+      const days = [];
+
+      // Add empty cells for days before the first day of the month
+      for (let i = 0; i < firstDay; i++) {
+        days.push(<View key={`empty-${i}`} style={styles.calendarDayEmpty} />);
+      }
+
+      // Add days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        const isSelected = rescheduleSelectedDate === day;
+        const isToday = day === new Date().getDate() && 
+                       currentMonth === new Date().getMonth() && 
+                       currentYear === new Date().getFullYear();
+        
+        days.push(
+          <TouchableOpacity
+            key={day}
+            style={[
+              styles.calendarDay,
+              isSelected && styles.calendarDaySelected,
+              isToday && styles.calendarDayToday
+            ]}
+            onPress={() => handleDateSelect(day)}
+          >
+            <Text style={[
+              styles.calendarDayText,
+              isSelected && styles.calendarDayTextSelected,
+              isToday && styles.calendarDayTextToday
+            ]}>
+              {day}
+            </Text>
+          </TouchableOpacity>
+        );
+      }
+
+      return days;
+    };
+
+    return (
+      <View style={styles.rescheduleContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.rescheduleHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowRescheduleBooking(false)}
+            style={styles.rescheduleBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.rescheduleTitle}>Reschedule Booking</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.rescheduleContent} showsVerticalScrollIndicator={false}>
+          {/* Booking Info */}
+          <View style={styles.rescheduleBookingInfo}>
+            <Text style={styles.rescheduleBookingTitle}>Current Booking</Text>
+            <View style={styles.rescheduleBookingDetails}>
+              <Text style={styles.rescheduleBookingLawyer}>{rescheduleBooking?.lawyerName}</Text>
+              <Text style={styles.rescheduleBookingCurrent}>
+                Current: {rescheduleBooking?.date} at {rescheduleBooking?.time}
+              </Text>
+            </View>
+          </View>
+
+          {/* Calendar Section */}
+          <View style={styles.rescheduleCalendarSection}>
+            <View style={styles.rescheduleCalendarHeader}>
+              <TouchableOpacity onPress={() => handleMonthChange('prev')}>
+                <ProfessionalIcon type="ARROW_LEFT" size={20} color="#2E4A6B" />
+              </TouchableOpacity>
+              <Text style={styles.rescheduleCalendarTitle}>
+                {months[currentMonth]} {currentYear}
+              </Text>
+              <TouchableOpacity onPress={() => handleMonthChange('next')}>
+                <ProfessionalIcon type="ARROW_RIGHT" size={20} color="#2E4A6B" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.rescheduleCalendarWeekHeader}>
+              {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map(day => (
+                <Text key={day} style={styles.rescheduleCalendarWeekDay}>{day}</Text>
+              ))}
+            </View>
+
+            <View style={styles.rescheduleCalendarGrid}>
+              {renderCalendar()}
+            </View>
+          </View>
+
+          {/* Time Slots Section */}
+          <View style={styles.rescheduleTimeSection}>
+            <Text style={styles.rescheduleTimeSectionTitle}>Select New Time</Text>
+            <View style={styles.rescheduleTimeSlots}>
+              {timeSlots.map((timeSlot, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.rescheduleTimeSlot,
+                    rescheduleSelectedTimeSlot === timeSlot && styles.rescheduleTimeSlotSelected
+                  ]}
+                  onPress={() => handleTimeSlotSelect(timeSlot)}
+                >
+                  <Text style={[
+                    styles.rescheduleTimeSlotText,
+                    rescheduleSelectedTimeSlot === timeSlot && styles.rescheduleTimeSlotTextSelected
+                  ]}>
+                    {timeSlot}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Selected Info */}
+          {(rescheduleSelectedDate || rescheduleSelectedTimeSlot) && (
+            <View style={styles.rescheduleSelectedInfo}>
+              <Text style={styles.rescheduleSelectedTitle}>New Appointment Details</Text>
+              {rescheduleSelectedDate && (
+                <Text style={styles.rescheduleSelectedDetail}>
+                  Date: {rescheduleSelectedDate} {months[currentMonth]} {currentYear}
+                </Text>
+              )}
+              {rescheduleSelectedTimeSlot && (
+                <Text style={styles.rescheduleSelectedDetail}>
+                  Time: {rescheduleSelectedTimeSlot}
+                </Text>
+              )}
+            </View>
+          )}
+        </ScrollView>
+
+        {/* Confirm Button */}
+        <View style={styles.rescheduleFooter}>
+          <TouchableOpacity
+            style={[
+              styles.rescheduleConfirmButton,
+              (!rescheduleSelectedDate || !rescheduleSelectedTimeSlot) && styles.rescheduleConfirmButtonDisabled
+            ]}
+            onPress={handleConfirmReschedule}
+            disabled={!rescheduleSelectedDate || !rescheduleSelectedTimeSlot}
+          >
+            <Text style={[
+              styles.rescheduleConfirmButtonText,
+              (!rescheduleSelectedDate || !rescheduleSelectedTimeSlot) && styles.rescheduleConfirmButtonTextDisabled
+            ]}>
+              Confirm Reschedule
+            </Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderServicesPage = () => {
+    // Law Firms Data (8-10 firms)
+    const lawFirms = [
+      {
+        id: '1',
+        name: 'Johnson & Associates Law Firm',
+        specialty: selectedService,
+        rating: 4.8,
+        lawyers: 15,
+        location: '2.1 km away',
+        description: 'Leading law firm specializing in corporate and civil law matters.',
+        image: require('./assets/images/lawfirm/lawfirm1.png')
+      },
+      {
+        id: '2',
+        name: 'Smith Legal Services',
+        specialty: selectedService,
+        rating: 4.6,
+        lawyers: 8,
+        location: '1.5 km away',
+        description: 'Experienced legal team with decades of combined experience.',
+        image: require('./assets/images/lawfirm/lawfirm2.png')
+      },
+      {
+        id: '3',
+        name: 'Williams & Partners',
+        specialty: selectedService,
+        rating: 4.9,
+        lawyers: 22,
+        location: '3.2 km away',
+        description: 'Full-service law firm with expertise across multiple practice areas.',
+        image: require('./assets/images/lawfirm/lawfirm3.png')
+      },
+      {
+        id: '4',
+        name: 'Davis Legal Group',
+        specialty: selectedService,
+        rating: 4.7,
+        lawyers: 12,
+        location: '2.8 km away',
+        description: 'Trusted legal advisors serving clients for over 20 years.',
+        image: require('./assets/images/lawfirm/lawfirm4.png')
+      },
+      {
+        id: '5',
+        name: 'Brown & Co Law Office',
+        specialty: selectedService,
+        rating: 4.5,
+        lawyers: 6,
+        location: '1.9 km away',
+        description: 'Boutique firm focused on providing personalized legal solutions.',
+        image: require('./assets/images/lawfirm/lawfirm5.png')
+      },
+      {
+        id: '6',
+        name: 'Miller Legal Consultants',
+        specialty: selectedService,
+        rating: 4.8,
+        lawyers: 18,
+        location: '2.5 km away',
+        description: 'Innovation-driven legal practice with modern approach.',
+        image: require('./assets/images/lawfirm/lawfirm6.png')
+      },
+      {
+        id: '7',
+        name: 'Wilson Law Corporation',
+        specialty: selectedService,
+        rating: 4.4,
+        lawyers: 10,
+        location: '3.5 km away',
+        description: 'Comprehensive legal services with client-first approach.',
+        image: require('./assets/images/lawfirm/lawfirm7.png')
+      },
+      {
+        id: '8',
+        name: 'Anderson Legal Solutions',
+        specialty: selectedService,
+        rating: 4.7,
+        lawyers: 14,
+        location: '2.3 km away',
+        description: 'Result-oriented legal professionals with proven track record.',
+        image: require('./assets/images/lawfirm/lawfirm8.png')
+      },
+      {
+        id: '9',
+        name: 'Taylor & Associates',
+        specialty: selectedService,
+        rating: 4.6,
+        lawyers: 9,
+        location: '1.8 km away',
+        description: 'Dedicated team providing excellence in legal representation.',
+        image: require('./assets/images/lawfirm/lawfirm9.png')
+      }
+    ];
+
+    // Lawyers Data (5-8 lawyers)
+    const serviceLawyers = [
+      {
+        id: '1',
+        name: 'Emily Johnson',
+        specialty: selectedService,
+        rating: 4.9,
+        distance: '1.2 km',
+        hourlyRate: '$18/hr',
+        experience: '8 years',
+        cases: '2.1k Cases',
+        successRate: '96% Success',
+        profileImage: require('./assets/images/lawyer/lawyer10.png')
+      },
+      {
+        id: '2',
+        name: 'Michael Davis',
+        specialty: selectedService,
+        rating: 4.7,
+        distance: '2.0 km',
+        hourlyRate: '$22/hr',
+        experience: '12 years',
+        cases: '3.8k Cases',
+        successRate: '94% Success',
+        profileImage: require('./assets/images/lawyer/lawyer11.png')
+      },
+      {
+        id: '3',
+        name: 'Sarah Wilson',
+        specialty: selectedService,
+        rating: 4.8,
+        distance: '1.5 km',
+        hourlyRate: '$20/hr',
+        experience: '10 years',
+        cases: '2.9k Cases',
+        successRate: '98% Success',
+        profileImage: require('./assets/images/lawyer/lawyer12.png')
+      },
+      {
+        id: '4',
+        name: 'David Brown',
+        specialty: selectedService,
+        rating: 4.6,
+        distance: '2.8 km',
+        hourlyRate: '$16/hr',
+        experience: '6 years',
+        cases: '1.5k Cases',
+        successRate: '92% Success',
+        profileImage: require('./assets/images/lawyer/lawyer13.png')
+      },
+      {
+        id: '5',
+        name: 'Jennifer Taylor',
+        specialty: selectedService,
+        rating: 4.9,
+        distance: '1.7 km',
+        hourlyRate: '$25/hr',
+        experience: '15 years',
+        cases: '4.2k Cases',
+        successRate: '99% Success',
+        profileImage: require('./assets/images/lawyer/lawyer14.png')
+      },
+      {
+        id: '6',
+        name: 'Robert Miller',
+        specialty: selectedService,
+        rating: 4.5,
+        distance: '3.1 km',
+        hourlyRate: '$19/hr',
+        experience: '9 years',
+        cases: '2.7k Cases',
+        successRate: '93% Success',
+        profileImage: require('./assets/images/lawyer/lawyer15.png')
+      },
+      {
+        id: '7',
+        name: 'Lisa Anderson',
+        specialty: selectedService,
+        rating: 4.8,
+        distance: '2.2 km',
+        hourlyRate: '$21/hr',
+        experience: '11 years',
+        cases: '3.3k Cases',
+        successRate: '97% Success',
+        profileImage: require('./assets/images/lawyer/lawyer16.png')
+      }
+    ];
+
+    const handleLawyerSelect = (lawyer) => {
+      const lawyerData = {
+        name: lawyer.name,
+        specialty: lawyer.specialty,
+        rating: lawyer.rating,
+        avatar: lawyer.profileImage,
+        profileImage: lawyer.profileImage,
+        distance: lawyer.distance,
+        hourlyRate: lawyer.hourlyRate,
+        cases: lawyer.cases,
+        successRate: lawyer.successRate,
+        description: 'Experienced legal professional with expertise in ' + lawyer.specialty + '. Committed to providing excellent legal representation and achieving favorable outcomes for clients.',
+        reviews: `${Math.floor(lawyer.rating * 50)} Reviews`
+      };
+      setSelectedLawyer(lawyerData);
+      setShowServicesPage(false);
+      setShowLawyerDetails(true);
+    };
+
+    const handleFirmPress = (firm) => {
+      setSelectedLawFirm(firm);
+      setShowLawFirmDetails(true);
+    };
+
+    return (
+      <View style={styles.servicesContainer}>
+        <StatusBar style="light" />
+        
+        {/* Fixed Navigation Header */}
+        <View style={styles.servicesNavHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowServicesPage(false)}
+            style={styles.servicesBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.servicesNavTitle}>Service Detail</Text>
+          <TouchableOpacity style={styles.servicesFilterButton}>
+            <ProfessionalIcon type="SETTINGS" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView style={styles.servicesScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Enhanced Hero Header */}
+          <View style={styles.servicesHeroHeader}>
+            <View style={styles.servicesHeroBackground}>
+              <View style={styles.servicesHeroOverlay} />
+              <View style={styles.servicesHeroContent}>
+                {/* Service Title */}
+                <View style={styles.servicesHeroInfo}>
+                  <View style={styles.serviceIconContainer}>
+                    <ProfessionalIcon type="SCALE" size={32} color="#ffffff" />
+                  </View>
+                  <Text style={styles.servicesHeroTitle}>{selectedService}</Text>
+                  <Text style={styles.servicesHeroSubtitle}>Legal Services</Text>
+                </View>
+                
+                {/* Stats Row - Absolutely Positioned */}
+                <View style={styles.servicesStatsRow}>
+                  <View style={styles.serviceStat}>
+                    <Text style={styles.serviceStatNumber}>{lawFirms.length}</Text>
+                    <Text style={styles.serviceStatLabel}>Law Firms</Text>
+                  </View>
+                  <View style={styles.serviceStatDivider} />
+                  <View style={styles.serviceStat}>
+                    <Text style={styles.serviceStatNumber}>{serviceLawyers.length}</Text>
+                    <Text style={styles.serviceStatLabel}>Lawyers</Text>
+                  </View>
+                  <View style={styles.serviceStatDivider} />
+                  <View style={styles.serviceStat}>
+                    <Text style={styles.serviceStatNumber}>4.8</Text>
+                    <Text style={styles.serviceStatLabel}>Avg Rating</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+          {/* Service Description Card */}
+          <View style={styles.serviceDescriptionCard}>
+            <View style={styles.serviceDescriptionHeader}>
+              <View style={styles.serviceDescriptionIcon}>
+                <ProfessionalIcon type="LIGHTBULB" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.serviceDescriptionTitle}>
+                About {selectedService} Law
+              </Text>
+            </View>
+            <Text style={styles.serviceDescriptionText}>
+              Connect with experienced {selectedService.toLowerCase()} attorneys and law firms. 
+              Get professional legal consultation, representation, and expert advice from qualified professionals 
+              who specialize in {selectedService.toLowerCase()} law matters.
+            </Text>
+            <View style={styles.serviceFeatures}>
+              <View style={styles.serviceFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.serviceFeatureText}>Expert Legal Advice</Text>
+              </View>
+              <View style={styles.serviceFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.serviceFeatureText}>Professional Representation</Text>
+              </View>
+              <View style={styles.serviceFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.serviceFeatureText}>Competitive Rates</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Enhanced Law Firms Section */}
+          <View style={styles.servicesSection}>
+            <View style={styles.servicesSectionHeader}>
+              <View>
+                <Text style={styles.servicesSectionTitle}>Top Law Firms</Text>
+                <Text style={styles.servicesSectionSubtitle}>
+                  {lawFirms.length} premier firms specializing in {selectedService}
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.sectionViewAllButton}
+                onPress={() => setShowViewAllFirms(true)}
+              >
+                <Text style={styles.sectionViewAllText}>View All</Text>
+                <ProfessionalIcon type="ARROW_RIGHT" size={16} color="#2E4A6B" />
+              </TouchableOpacity>
+            </View>
+            
+            <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.lawFirmsScrollView}>
+              <View style={styles.lawFirmsHorizontalContainer}>
+                {lawFirms.slice(0, 5).map((firm) => (
+                  <TouchableOpacity
+                    key={firm.id}
+                    style={styles.lawFirmCard}
+                    onPress={() => handleFirmPress(firm)}
+                  >
+                    <View style={styles.lawFirmCardHeader}>
+                      <View style={styles.lawFirmImageContainer}>
+                        <Image source={firm.image} style={styles.lawFirmImage} />
+                      </View>
+                    </View>
+                    <View style={styles.lawFirmCardContent}>
+                      <Text style={styles.lawFirmName}>{firm.name}</Text>
+                      <Text style={styles.lawFirmSpecialty}>{firm.specialty}</Text>
+                      <View style={styles.lawFirmQuickStats}>
+                        <View style={styles.lawFirmQuickStat}>
+                          <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                          <Text style={styles.lawFirmQuickStatText}>{firm.rating}</Text>
+                        </View>
+                        <View style={styles.lawFirmQuickStat}>
+                          <ProfessionalIcon type="USER" size={14} color="#6c757d" />
+                          <Text style={styles.lawFirmQuickStatText}>{firm.lawyers} lawyers</Text>
+                        </View>
+                        <View style={styles.lawFirmQuickStat}>
+                          <ProfessionalIcon type="LOCATION" size={14} color="#6c757d" />
+                          <Text style={styles.lawFirmQuickStatText}>{firm.location}</Text>
+                        </View>
+                      </View>
+                    </View>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </ScrollView>
+          </View>
+
+          {/* Enhanced Individual Lawyers Section */}
+          <View style={styles.servicesSection}>
+            <View style={styles.servicesSectionHeader}>
+              <View>
+                <Text style={styles.servicesSectionTitle}>Expert Lawyers</Text>
+                <Text style={styles.servicesSectionSubtitle}>
+                  {serviceLawyers.length} experienced attorneys available
+                </Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.sectionViewAllButton}
+                onPress={() => setShowViewAllLawyers(true)}
+              >
+                <Text style={styles.sectionViewAllText}>View All</Text>
+                <ProfessionalIcon type="ARROW_RIGHT" size={16} color="#2E4A6B" />
+              </TouchableOpacity>
+            </View>
+            
+            <View style={styles.lawyersGrid}>
+              {serviceLawyers.map((lawyer) => (
+                <TouchableOpacity
+                  key={lawyer.id}
+                  style={styles.serviceLawyerCard}
+                  onPress={() => handleLawyerSelect(lawyer)}
+                >
+                  <View style={styles.serviceLawyerHeader}>
+                    <View style={styles.serviceLawyerImageContainer}>
+                      <Image source={lawyer.profileImage} style={styles.serviceLawyerImage} />
+                    </View>
+                    <View style={styles.serviceLawyerRatingContainer}>
+                      <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                      <Text style={styles.serviceLawyerRating}>{lawyer.rating}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.serviceLawyerInfo}>
+                    <Text style={styles.serviceLawyerName}>{lawyer.name}</Text>
+                    <Text style={styles.serviceLawyerSpecialty}>{lawyer.specialty}</Text>
+                    <Text style={styles.serviceLawyerExperience}>{lawyer.experience} experience</Text>
+                    
+                    <View style={styles.serviceLawyerStats}>
+                      <View style={styles.serviceLawyerStat}>
+                        <ProfessionalIcon type="BRIEFCASE" size={12} color="#2E4A6B" />
+                        <Text style={styles.serviceLawyerStatText}>{lawyer.cases}</Text>
+                      </View>
+                      <View style={styles.serviceLawyerStat}>
+                        <ProfessionalIcon type="CHECKMARK" size={12} color="#28a745" />
+                        <Text style={styles.serviceLawyerStatText}>{lawyer.successRate}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.serviceLawyerFooter}>
+                      <Text style={styles.serviceLawyerRate}>{lawyer.hourlyRate}</Text>
+                      <View style={styles.serviceLawyerDistance}>
+                        <ProfessionalIcon type="LOCATION" size={12} color="#6c757d" />
+                        <Text style={styles.serviceLawyerDistanceText}>{lawyer.distance}</Text>
+                      </View>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Bottom Spacing */}
+          <View style={styles.servicesBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderAllHomeLawFirmsPage = () => {
+    // All Available Law Firms Data (comprehensive list - 22 firms total)
+    const allHomeLawFirms = [
+      { id: '1', name: 'Sterling Legal Associates', specialty: 'Corporate Law', rating: '4.8', lawyers: 15, location: '2.1 km', image: require('./assets/images/lawfirm/lawfirm1.png') },
+      { id: '2', name: 'Blackstone Law Group', specialty: 'Criminal Defense', rating: '4.6', lawyers: 8, location: '1.5 km', image: require('./assets/images/lawfirm/lawfirm2.png') },
+      { id: '3', name: 'Heritage Legal Partners', specialty: 'Family Law', rating: '4.9', lawyers: 22, location: '3.2 km', image: require('./assets/images/lawfirm/lawfirm3.png') },
+      { id: '4', name: 'Phoenix Legal Solutions', specialty: 'Personal Injury', rating: '4.7', lawyers: 12, location: '2.8 km', image: require('./assets/images/lawfirm/lawfirm4.png') },
+      { id: '5', name: 'Meridian Law Office', specialty: 'Real Estate', rating: '4.5', lawyers: 6, location: '1.9 km', image: require('./assets/images/lawfirm/lawfirm5.png') },
+      { id: '6', name: 'Pinnacle Legal Consultants', specialty: 'Business Law', rating: '4.8', lawyers: 18, location: '2.5 km', image: require('./assets/images/lawfirm/lawfirm6.png') },
+      { id: '7', name: 'Horizon Law Corporation', specialty: 'Immigration', rating: '4.4', lawyers: 10, location: '3.5 km', image: require('./assets/images/lawfirm/lawfirm7.png') },
+      { id: '8', name: 'Summit Legal Services', specialty: 'Tax Law', rating: '4.7', lawyers: 14, location: '2.3 km', image: require('./assets/images/lawfirm/lawfirm8.png') },
+      { id: '9', name: 'Apex Legal Group', specialty: 'Employment Law', rating: '4.6', lawyers: 9, location: '1.8 km', image: require('./assets/images/lawfirm/lawfirm9.png') },
+      { id: '10', name: 'Elite Law Firm', specialty: 'Intellectual Property', rating: '4.9', lawyers: 16, location: '1.9 km', image: require('./assets/images/lawfirm/lawfirm10.png') },
+      { id: '11', name: 'Premier Legal Associates', specialty: 'Medical Malpractice', rating: '4.8', lawyers: 11, location: '2.7 km', image: require('./assets/images/lawfirm/lawfirm11.png') },
+      { id: '12', name: 'Coastal Legal Group', specialty: 'Environmental Law', rating: '4.5', lawyers: 7, location: '3.1 km', image: require('./assets/images/lawfirm/lawfirm12.png') },
+      { id: '13', name: 'Metropolitan Law Partners', specialty: 'Bankruptcy Law', rating: '4.7', lawyers: 13, location: '2.4 km', image: require('./assets/images/lawfirm/lawfirm13.png') },
+      { id: '14', name: 'Liberty Legal Office', specialty: 'Civil Rights', rating: '4.6', lawyers: 8, location: '2.9 km', image: require('./assets/images/lawfirm/lawfirm14.png') },
+      { id: '15', name: 'Capitol Legal Services', specialty: 'Contract Law', rating: '4.8', lawyers: 15, location: '1.6 km', image: require('./assets/images/lawfirm/lawfirm15.png') },
+      { id: '16', name: 'Prestige Law Associates', specialty: 'Securities Law', rating: '4.9', lawyers: 19, location: '3.8 km', image: require('./assets/images/lawfirm/lawfirm16.png') },
+      { id: '17', name: 'Innovation Legal Group', specialty: 'Patent Law', rating: '4.7', lawyers: 12, location: '2.2 km', image: require('./assets/images/lawfirm/lawfirm17.png') },
+      { id: '18', name: 'Harmony Law Partners', specialty: 'Divorce Law', rating: '4.5', lawyers: 9, location: '2.6 km', image: require('./assets/images/lawfirm/lawfirm18.png') },
+      { id: '19', name: 'Guardian Legal Corporation', specialty: 'DUI Defense', rating: '4.6', lawyers: 6, location: '1.7 km', image: require('./assets/images/lawfirm/lawfirm19.png') },
+      { id: '20', name: 'Cornerstone Legal Solutions', specialty: 'Workers Compensation', rating: '4.8', lawyers: 14, location: '3.3 km', image: require('./assets/images/lawfirm/lawfirm20.png') },
+      { id: '21', name: 'Vanguard Law Firm', specialty: 'Construction Law', rating: '4.7', lawyers: 10, location: '2.0 km', image: require('./assets/images/lawfirm/lawfirm21.png') },
+      { id: '22', name: 'Nexus Legal Associates', specialty: 'Entertainment Law', rating: '4.9', lawyers: 13, location: '1.4 km', image: require('./assets/images/lawfirm/lawfirm22.png') }
+    ];
+
+    const handleAllHomeLawFirmsSelect = (firm) => {
+      setSelectedLawFirm(firm);
+      setShowAllHomeLawFirms(false);
+      setShowLawFirmDetails(true);
+    };
+
+    return (
+      <View style={styles.allHomeLawFirmsContainer}>
+        <StatusBar style="light" />
+        
+        {/* Fixed Navigation Header */}
+        <View style={styles.allHomeLawFirmsNavHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowAllHomeLawFirms(false)}
+            style={styles.servicesBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.servicesNavTitle}>All Law Firms</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+        
+        <ScrollView style={styles.allHomeLawFirmsScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Info */}
+          <View style={styles.allHomeLawFirmsHeaderInfo}>
+            <Text style={styles.allHomeLawFirmsTitle}>All Available Law Firms</Text>
+            <Text style={styles.allHomeLawFirmsSubtitle}>{allHomeLawFirms.length} professional law firms available in your area</Text>
+          </View>
+
+          {/* All Law Firms Grid */}
+          <View style={styles.allHomeLawFirmsGrid}>
+            {allHomeLawFirms.map((firm) => (
+              <TouchableOpacity
+                key={firm.id}
+                style={styles.allHomeLawFirmCard}
+                onPress={() => handleAllHomeLawFirmsSelect(firm)}
+              >
+                <View style={styles.allHomeLawFirmImageContainer}>
+                  <Image source={firm.image} style={styles.allHomeLawFirmImage} />
+                </View>
+                <View style={styles.allHomeLawFirmInfo}>
+                  <Text style={styles.allHomeLawFirmName}>{firm.name}</Text>
+                  <Text style={styles.allHomeLawFirmSpecialty}>{firm.specialty}</Text>
+                  <View style={styles.allHomeLawFirmStats}>
+                    <View style={styles.allHomeLawFirmStat}>
+                      <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                      <Text style={styles.allHomeLawFirmStatText}>{firm.rating}</Text>
+                    </View>
+                    <View style={styles.allHomeLawFirmStat}>
+                      <ProfessionalIcon type="USER" size={14} color="#6c757d" />
+                      <Text style={styles.allHomeLawFirmStatText}>{firm.lawyers} lawyers</Text>
+                    </View>
+                    <View style={styles.allHomeLawFirmStat}>
+                      <ProfessionalIcon type="LOCATION" size={14} color="#6c757d" />
+                      <Text style={styles.allHomeLawFirmStatText}>{firm.location}</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Bottom Spacing */}
+          <View style={styles.allHomeLawFirmsBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderViewAllLawyersPage = () => {
+    // Extended Lawyers Data (showing more lawyers for the selected service)
+    const allServiceLawyers = [
+      {
+        id: '1',
+        name: 'Emily Johnson',
+        specialty: selectedService,
+        rating: 4.9,
+        distance: '1.2 km',
+        hourlyRate: '$18/hr',
+        experience: '8 years',
+        cases: '2.1k Cases',
+        successRate: '96% Success',
+        profileImage: require('./assets/images/lawyer/lawyer10.png')
+      },
+      {
+        id: '2',
+        name: 'Michael Davis',
+        specialty: selectedService,
+        rating: 4.7,
+        distance: '2.0 km',
+        hourlyRate: '$22/hr',
+        experience: '12 years',
+        cases: '3.8k Cases',
+        successRate: '94% Success',
+        profileImage: require('./assets/images/lawyer/lawyer11.png')
+      },
+      {
+        id: '3',
+        name: 'Sarah Wilson',
+        specialty: selectedService,
+        rating: 4.8,
+        distance: '1.5 km',
+        hourlyRate: '$20/hr',
+        experience: '10 years',
+        cases: '2.9k Cases',
+        successRate: '98% Success',
+        profileImage: require('./assets/images/lawyer/lawyer12.png')
+      },
+      {
+        id: '4',
+        name: 'David Brown',
+        specialty: selectedService,
+        rating: 4.6,
+        distance: '2.8 km',
+        hourlyRate: '$19/hr',
+        experience: '7 years',
+        cases: '1.8k Cases',
+        successRate: '92% Success',
+        profileImage: require('./assets/images/lawyer/lawyer13.png')
+      },
+      {
+        id: '5',
+        name: 'Jennifer Martinez',
+        specialty: selectedService,
+        rating: 4.9,
+        distance: '1.8 km',
+        hourlyRate: '$25/hr',
+        experience: '15 years',
+        cases: '4.2k Cases',
+        successRate: '99% Success',
+        profileImage: require('./assets/images/lawyer/lawyer14.png')
+      },
+      {
+        id: '6',
+        name: 'Robert Thompson',
+        specialty: selectedService,
+        rating: 4.5,
+        distance: '3.1 km',
+        hourlyRate: '$17/hr',
+        experience: '6 years',
+        cases: '1.5k Cases',
+        successRate: '90% Success',
+        profileImage: require('./assets/images/lawyer/lawyer15.png')
+      },
+      {
+        id: '7',
+        name: 'Lisa Anderson',
+        specialty: selectedService,
+        rating: 4.8,
+        distance: '2.2 km',
+        hourlyRate: '$21/hr',
+        experience: '11 years',
+        cases: '3.3k Cases',
+        successRate: '97% Success',
+        profileImage: require('./assets/images/lawyer/lawyer16.png')
+      },
+      {
+        id: '8',
+        name: 'James Wilson',
+        specialty: selectedService,
+        rating: 4.7,
+        distance: '1.9 km',
+        hourlyRate: '$23/hr',
+        experience: '13 years',
+        cases: '3.9k Cases',
+        successRate: '95% Success',
+        profileImage: require('./assets/images/lawyer/lawyer17.png')
+      },
+      {
+        id: '9',
+        name: 'Maria Rodriguez',
+        specialty: selectedService,
+        rating: 4.9,
+        distance: '1.4 km',
+        hourlyRate: '$24/hr',
+        experience: '14 years',
+        cases: '4.1k Cases',
+        successRate: '98% Success',
+        profileImage: require('./assets/images/lawyer/lawyer18.png')
+      },
+      {
+        id: '10',
+        name: 'Thomas Clark',
+        specialty: selectedService,
+        rating: 4.6,
+        distance: '2.5 km',
+        hourlyRate: '$20/hr',
+        experience: '9 years',
+        cases: '2.7k Cases',
+        successRate: '93% Success',
+        profileImage: require('./assets/images/lawyer/lawyer19.png')
+      },
+      {
+        id: '11',
+        name: 'Amanda Lee',
+        specialty: selectedService,
+        rating: 4.8,
+        distance: '1.7 km',
+        hourlyRate: '$22/hr',
+        experience: '12 years',
+        cases: '3.6k Cases',
+        successRate: '96% Success',
+        profileImage: require('./assets/images/lawyer/lawyer20.png')
+      },
+      {
+        id: '12',
+        name: 'Christopher Taylor',
+        specialty: selectedService,
+        rating: 4.7,
+        distance: '2.3 km',
+        hourlyRate: '$19/hr',
+        experience: '8 years',
+        cases: '2.4k Cases',
+        successRate: '94% Success',
+        profileImage: require('./assets/images/lawyer/lawyer1.png')
+      }
+    ];
+
+    const handleAllLawyersSelect = (lawyer) => {
+      const lawyerData = {
+        name: lawyer.name,
+        specialty: lawyer.specialty,
+        rating: lawyer.rating,
+        avatar: lawyer.profileImage,
+        profileImage: lawyer.profileImage,
+        distance: lawyer.distance,
+        hourlyRate: lawyer.hourlyRate,
+        cases: lawyer.cases,
+        successRate: lawyer.successRate,
+        description: 'Experienced legal professional with expertise in ' + lawyer.specialty + '. Committed to providing excellent legal representation and achieving favorable outcomes for clients.',
+        reviews: `${Math.floor(lawyer.rating * 50)} Reviews`
+      };
+      
+      // Clear all navigation states first
+      setShowViewAllLawyers(false);
+      setShowServicesPage(false);
+      
+      // Set lawyer data and show lawyer details
+      setSelectedLawyer(lawyerData);
+      setShowLawyerDetails(true);
+    };
+
+    return (
+      <View style={styles.viewAllLawyersContainer}>
+        <StatusBar style="light" />
+        
+        {/* Fixed Navigation Header */}
+        <View style={styles.viewAllLawyersNavHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowViewAllLawyers(false)}
+            style={styles.servicesBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.servicesNavTitle}>All {selectedService} Lawyers</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+        
+        <ScrollView style={styles.viewAllLawyersScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Info */}
+          <View style={styles.viewAllLawyersHeaderInfo}>
+            <Text style={styles.viewAllLawyersTitle}>Expert Lawyers in {selectedService}</Text>
+            <Text style={styles.viewAllLawyersSubtitle}>{allServiceLawyers.length} experienced attorneys available in your area</Text>
+          </View>
+
+          {/* All Lawyers Grid */}
+          <View style={styles.viewAllLawyersGrid}>
+            {allServiceLawyers.map((lawyer) => (
+              <TouchableOpacity
+                key={lawyer.id}
+                style={styles.viewAllLawyerCard}
+                onPress={() => handleAllLawyersSelect(lawyer)}
+              >
+                <View style={styles.viewAllLawyerHeader}>
+                  <View style={styles.viewAllLawyerImageContainer}>
+                    <Image source={lawyer.profileImage} style={styles.viewAllLawyerImage} />
+                  </View>
+                  <View style={styles.viewAllLawyerRatingContainer}>
+                    <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                    <Text style={styles.viewAllLawyerRating}>{lawyer.rating}</Text>
+                  </View>
+                </View>
+                <View style={styles.viewAllLawyerInfo}>
+                  <Text style={styles.viewAllLawyerName}>{lawyer.name}</Text>
+                  <Text style={styles.viewAllLawyerSpecialty}>{lawyer.specialty}</Text>
+                  <Text style={styles.viewAllLawyerExperience}>{lawyer.experience} experience</Text>
+                  
+                  <View style={styles.viewAllLawyerStats}>
+                    <View style={styles.viewAllLawyerStat}>
+                      <ProfessionalIcon type="BRIEFCASE" size={12} color="#2E4A6B" />
+                      <Text style={styles.viewAllLawyerStatText}>{lawyer.cases}</Text>
+                    </View>
+                    <View style={styles.viewAllLawyerStat}>
+                      <ProfessionalIcon type="CHECKMARK" size={12} color="#28a745" />
+                      <Text style={styles.viewAllLawyerStatText}>{lawyer.successRate}</Text>
+                    </View>
+                  </View>
+                  
+                  <View style={styles.viewAllLawyerFooter}>
+                    <Text style={styles.viewAllLawyerRate}>{lawyer.hourlyRate}</Text>
+                    <View style={styles.viewAllLawyerDistance}>
+                      <ProfessionalIcon type="LOCATION" size={12} color="#6c757d" />
+                      <Text style={styles.viewAllLawyerDistanceText}>{lawyer.distance}</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Bottom Spacing */}
+          <View style={styles.viewAllLawyersBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderLawFirmDetailsPage = () => {
+    if (!selectedLawFirm) return null;
+
+    // Services that the law firm offers
+    const firmServices = [
+      { name: 'Legal Consultation', icon: 'SCALE', description: 'Professional legal advice and consultation' },
+      { name: 'Contract Review', icon: 'DOC', description: 'Comprehensive contract analysis and review' },
+      { name: 'Litigation Support', icon: 'BRIEFCASE', description: 'Court representation and legal proceedings' },
+      { name: 'Legal Documentation', icon: 'DOC', description: 'Preparation of legal documents and agreements' },
+      { name: 'Compliance Advisory', icon: 'CHECKMARK', description: 'Regulatory compliance and advisory services' },
+      { name: 'Corporate Law', icon: 'BUILDING', description: 'Business formation and corporate legal matters' }
+    ];
+
+    // Lawyers working at this firm
+    const firmLawyers = [
+      {
+        id: '1',
+        name: 'Sarah Mitchell',
+        specialty: selectedService,
+        rating: 4.9,
+        experience: '12 years',
+        cases: '3.2k Cases',
+        successRate: '98% Success',
+        hourlyRate: '$25/hr',
+        profileImage: require('./assets/images/lawyer/lawyer10.png')
+      },
+      {
+        id: '2',
+        name: 'David Chen',
+        specialty: selectedService,
+        rating: 4.8,
+        experience: '8 years',
+        cases: '2.1k Cases',
+        successRate: '95% Success',
+        hourlyRate: '$22/hr',
+        profileImage: require('./assets/images/lawyer/lawyer11.png')
+      },
+      {
+        id: '3',
+        name: 'Emily Rodriguez',
+        specialty: selectedService,
+        rating: 4.7,
+        experience: '10 years',
+        cases: '2.8k Cases',
+        successRate: '96% Success',
+        hourlyRate: '$24/hr',
+        profileImage: require('./assets/images/lawyer/lawyer12.png')
+      },
+      {
+        id: '4',
+        name: 'Michael Thompson',
+        specialty: selectedService,
+        rating: 4.6,
+        experience: '6 years',
+        cases: '1.8k Cases',
+        successRate: '94% Success',
+        hourlyRate: '$20/hr',
+        profileImage: require('./assets/images/lawyer/lawyer13.png')
+      }
+    ];
+
+    const handleFirmLawyerSelect = (lawyer) => {
+      const lawyerData = {
+        name: lawyer.name,
+        specialty: lawyer.specialty,
+        rating: lawyer.rating,
+        avatar: lawyer.profileImage,
+        profileImage: lawyer.profileImage,
+        distance: '1.5 km',
+        hourlyRate: lawyer.hourlyRate,
+        cases: lawyer.cases,
+        successRate: lawyer.successRate,
+        description: `Experienced legal professional at ${selectedLawFirm.name} with expertise in ${lawyer.specialty}. Committed to providing excellent legal representation and achieving favorable outcomes for clients.`,
+        reviews: `${Math.floor(lawyer.rating * 50)} Reviews`
+      };
+      
+      // Clear all navigation states first
+      setShowLawFirmDetails(false);
+      setShowServicesPage(false);
+      setShowViewAllFirms(false);
+      
+      // Set lawyer data and show lawyer details
+      setSelectedLawyer(lawyerData);
+      setShowLawyerDetails(true);
+    };
+
+    return (
+      <View style={styles.lawFirmDetailsContainer}>
+        <StatusBar style="light" />
+        
+        {/* Fixed Navigation Header */}
+        <View style={styles.lawFirmDetailsNavHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowLawFirmDetails(false)}
+            style={styles.lawFirmDetailsBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.lawFirmDetailsNavTitle}>Law Firm Detail</Text>
+          <TouchableOpacity style={styles.lawFirmDetailsFilterButton}>
+            <ProfessionalIcon type="SETTINGS" size={20} color="#ffffff" />
+          </TouchableOpacity>
+        </View>
+        
+        <ScrollView style={styles.lawFirmDetailsScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Enhanced Hero Header */}
+          <View style={styles.lawFirmDetailsHeroHeader}>
+            <View style={styles.lawFirmDetailsHeroBackground}>
+              <View style={styles.lawFirmDetailsHeroOverlay} />
+              <View style={styles.lawFirmDetailsHeroContent}>
+                {/* Firm Info */}
+                <View style={styles.lawFirmDetailsHeroInfo}>
+                  <View style={styles.lawFirmDetailsImageContainer}>
+                    <Image source={selectedLawFirm.image} style={styles.lawFirmDetailsHeroImage} />
+                  </View>
+                  <Text style={styles.lawFirmDetailsHeroTitle}>{selectedLawFirm.name}</Text>
+                  <Text style={styles.lawFirmDetailsHeroSubtitle}>Professional Legal Services</Text>
+                </View>
+                
+                {/* Stats Row */}
+                <View style={styles.lawFirmDetailsStatsRow}>
+                  <View style={styles.lawFirmDetailsStat}>
+                    <Text style={styles.lawFirmDetailsStatNumber}>{selectedLawFirm.rating}</Text>
+                    <Text style={styles.lawFirmDetailsStatLabel}>Rating</Text>
+                  </View>
+                  <View style={styles.lawFirmDetailsStatDivider} />
+                  <View style={styles.lawFirmDetailsStat}>
+                    <Text style={styles.lawFirmDetailsStatNumber}>{selectedLawFirm.lawyers}</Text>
+                    <Text style={styles.lawFirmDetailsStatLabel}>Lawyers</Text>
+                  </View>
+                  <View style={styles.lawFirmDetailsStatDivider} />
+                  <View style={styles.lawFirmDetailsStat}>
+                    <Text style={styles.lawFirmDetailsStatNumber}>15+</Text>
+                    <Text style={styles.lawFirmDetailsStatLabel}>Years</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Firm Description Card */}
+          <View style={styles.lawFirmDetailsDescriptionCard}>
+            <View style={styles.lawFirmDetailsDescriptionHeader}>
+              <View style={styles.lawFirmDetailsDescriptionIcon}>
+                <ProfessionalIcon type="LIGHTBULB" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.lawFirmDetailsDescriptionTitle}>
+                About {selectedLawFirm.name}
+              </Text>
+            </View>
+            <Text style={styles.lawFirmDetailsDescriptionText}>
+              {selectedLawFirm.description} Our experienced team of legal professionals provides comprehensive legal services with a commitment to excellence and client satisfaction. We specialize in {selectedService.toLowerCase()} law and have successfully handled thousands of cases.
+            </Text>
+            <View style={styles.lawFirmDetailsFeatures}>
+              <View style={styles.lawFirmDetailsFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.lawFirmDetailsFeatureText}>Experienced Legal Team</Text>
+              </View>
+              <View style={styles.lawFirmDetailsFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.lawFirmDetailsFeatureText}>Proven Track Record</Text>
+              </View>
+              <View style={styles.lawFirmDetailsFeature}>
+                <ProfessionalIcon type="CHECKMARK" size={16} color="#28a745" />
+                <Text style={styles.lawFirmDetailsFeatureText}>Client-Focused Approach</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Services Section */}
+          <View style={styles.lawFirmDetailsSection}>
+            <View style={styles.lawFirmDetailsSectionHeader}>
+              <View>
+                <Text style={styles.lawFirmDetailsSectionTitle}>Our Services</Text>
+                <Text style={styles.lawFirmDetailsSectionSubtitle}>
+                  Comprehensive legal services we offer
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.lawFirmDetailsServicesGrid}>
+              {firmServices.map((service, index) => (
+                <View
+                  key={index}
+                  style={styles.lawFirmDetailsServiceCard}
+                >
+                  <View style={styles.lawFirmDetailsServiceIconContainer}>
+                    <ProfessionalIcon type={service.icon} size={24} color="#2E4A6B" />
+                  </View>
+                  <View style={styles.lawFirmDetailsServiceInfo}>
+                    <Text style={styles.lawFirmDetailsServiceName}>{service.name}</Text>
+                    <Text style={styles.lawFirmDetailsServiceDescription}>{service.description}</Text>
+                  </View>
+                </View>
+              ))}
+            </View>
+          </View>
+
+          {/* Lawyers Section */}
+          <View style={styles.lawFirmDetailsSection}>
+            <View style={styles.lawFirmDetailsSectionHeader}>
+              <View>
+                <Text style={styles.lawFirmDetailsSectionTitle}>Our Lawyers</Text>
+                <Text style={styles.lawFirmDetailsSectionSubtitle}>
+                  Meet our experienced legal professionals
+                </Text>
+              </View>
+            </View>
+            
+            <View style={styles.lawFirmDetailsLawyersGrid}>
+              {firmLawyers.map((lawyer) => (
+                <TouchableOpacity
+                  key={lawyer.id}
+                  style={styles.lawFirmDetailsLawyerCard}
+                  onPress={() => handleFirmLawyerSelect(lawyer)}
+                >
+                  <View style={styles.lawFirmDetailsLawyerHeader}>
+                    <View style={styles.lawFirmDetailsLawyerImageContainer}>
+                      <Image source={lawyer.profileImage} style={styles.lawFirmDetailsLawyerImage} />
+                      <View style={styles.lawFirmDetailsLawyerOnlineIndicator} />
+                    </View>
+                    <View style={styles.lawFirmDetailsLawyerRatingContainer}>
+                      <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                      <Text style={styles.lawFirmDetailsLawyerRating}>{lawyer.rating}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.lawFirmDetailsLawyerInfo}>
+                    <Text style={styles.lawFirmDetailsLawyerName}>{lawyer.name}</Text>
+                    <Text style={styles.lawFirmDetailsLawyerSpecialty}>{lawyer.specialty}</Text>
+                    <Text style={styles.lawFirmDetailsLawyerExperience}>{lawyer.experience} experience</Text>
+                    
+                    <View style={styles.lawFirmDetailsLawyerStats}>
+                      <View style={styles.lawFirmDetailsLawyerStat}>
+                        <ProfessionalIcon type="BRIEFCASE" size={12} color="#2E4A6B" />
+                        <Text style={styles.lawFirmDetailsLawyerStatText}>{lawyer.cases}</Text>
+                      </View>
+                      <View style={styles.lawFirmDetailsLawyerStat}>
+                        <ProfessionalIcon type="CHECKMARK" size={12} color="#28a745" />
+                        <Text style={styles.lawFirmDetailsLawyerStatText}>{lawyer.successRate}</Text>
+                      </View>
+                    </View>
+                    
+                    <View style={styles.lawFirmDetailsLawyerFooter}>
+                      <Text style={styles.lawFirmDetailsLawyerRate}>{lawyer.hourlyRate}</Text>
+                      <TouchableOpacity 
+                        style={styles.lawFirmDetailsConsultButton}
+                        onPress={() => handleFirmLawyerSelect(lawyer)}
+                      >
+                        <Text style={styles.lawFirmDetailsConsultButtonText}>Consult</Text>
+                      </TouchableOpacity>
+                    </View>
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Bottom Spacing */}
+          <View style={styles.lawFirmDetailsBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderViewAllFirmsPage = () => {
+    // Law Firms Data (showing all firms instead of just 5)
+    const lawFirms = [
+      {
+        id: '1',
+        name: 'Johnson & Associates Law Firm',
+        specialty: selectedService,
+        rating: 4.8,
+        lawyers: 15,
+        location: '2.1 km away',
+        description: 'Leading law firm specializing in corporate and civil law matters.',
+        image: require('./assets/images/lawfirm/lawfirm10.png')
+      },
+      {
+        id: '2',
+        name: 'Smith Legal Partners',
+        specialty: selectedService,
+        rating: 4.7,
+        lawyers: 12,
+        location: '1.8 km away',
+        description: 'Experienced legal professionals with expertise in various law fields.',
+        image: require('./assets/images/lawfirm/lawfirm11.png')
+      },
+      {
+        id: '3',
+        name: 'Davis & Wilson Law Group',
+        specialty: selectedService,
+        rating: 4.9,
+        lawyers: 18,
+        location: '3.2 km away',
+        description: 'Premier law firm with decades of experience in legal representation.',
+        image: require('./assets/images/lawfirm/lawfirm12.png')
+      },
+      {
+        id: '4',
+        name: 'Brown Legal Associates',
+        specialty: selectedService,
+        rating: 4.6,
+        lawyers: 10,
+        location: '2.5 km away',
+        description: 'Dedicated legal team providing comprehensive legal solutions.',
+        image: require('./assets/images/lawfirm/lawfirm13.png')
+      },
+      {
+        id: '5',
+        name: 'Miller & Thompson LLP',
+        specialty: selectedService,
+        rating: 4.8,
+        lawyers: 22,
+        location: '1.5 km away',
+        description: 'Full-service law firm with expertise across multiple practice areas.',
+        image: require('./assets/images/lawfirm/lawfirm14.png')
+      },
+      {
+        id: '6',
+        name: 'Anderson Legal Group',
+        specialty: selectedService,
+        rating: 4.5,
+        lawyers: 8,
+        location: '4.1 km away',
+        description: 'Boutique law firm specializing in personalized legal services.',
+        image: require('./assets/images/lawfirm/lawfirm15.png')
+      },
+      {
+        id: '7',
+        name: 'Taylor & Associates',
+        specialty: selectedService,
+        rating: 4.7,
+        lawyers: 14,
+        location: '2.8 km away',
+        description: 'Trusted legal advisors with a proven track record of success.',
+        image: require('./assets/images/lawfirm/lawfirm16.png')
+      },
+      {
+        id: '8',
+        name: 'Roberts Law Firm',
+        specialty: selectedService,
+        rating: 4.9,
+        lawyers: 16,
+        location: '1.9 km away',
+        description: 'Excellence in legal representation with client-focused approach.',
+        image: require('./assets/images/lawfirm/lawfirm17.png')
+      },
+      {
+        id: '9',
+        name: 'Clark Legal Services',
+        specialty: selectedService,
+        rating: 4.6,
+        lawyers: 11,
+        location: '3.5 km away',
+        description: 'Comprehensive legal solutions with personalized attention.',
+        image: require('./assets/images/lawfirm/lawfirm18.png')
+      }
+    ];
+
+    const handleFirmPress = (firm) => {
+      setSelectedLawFirm(firm);
+      setShowViewAllFirms(false);
+      setShowLawFirmDetails(true);
+    };
+
+    return (
+      <View style={styles.viewAllContainer}>
+        <StatusBar style="light" />
+        
+        {/* Fixed Navigation Header */}
+        <View style={styles.viewAllNavHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowViewAllFirms(false)}
+            style={styles.servicesBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.servicesNavTitle}>All {selectedService} Law Firms</Text>
+          <View style={styles.headerPlaceholder} />
+        </View>
+        
+        <ScrollView style={styles.viewAllScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Header Info */}
+          <View style={styles.viewAllHeaderInfo}>
+            <Text style={styles.viewAllTitle}>Law Firms Specializing in {selectedService}</Text>
+            <Text style={styles.viewAllSubtitle}>{lawFirms.length} firms available in your area</Text>
+          </View>
+
+          {/* All Law Firms Grid */}
+          <View style={styles.viewAllFirmsGrid}>
+            {lawFirms.map((firm) => (
+              <TouchableOpacity
+                key={firm.id}
+                style={styles.viewAllFirmCard}
+                onPress={() => handleFirmPress(firm)}
+              >
+                <View style={styles.viewAllFirmImageContainer}>
+                  <Image source={firm.image} style={styles.viewAllFirmImage} />
+                </View>
+                <View style={styles.viewAllFirmInfo}>
+                  <Text style={styles.viewAllFirmName}>{firm.name}</Text>
+                  <Text style={styles.viewAllFirmSpecialty}>{firm.specialty}</Text>
+                  <Text style={styles.viewAllFirmDescription}>{firm.description}</Text>
+                  <View style={styles.viewAllFirmStats}>
+                    <View style={styles.viewAllFirmStat}>
+                      <ProfessionalIcon type="STAR" size={14} color="#FFD700" />
+                      <Text style={styles.viewAllFirmStatText}>{firm.rating}</Text>
+                    </View>
+                    <View style={styles.viewAllFirmStat}>
+                      <ProfessionalIcon type="USER" size={14} color="#6c757d" />
+                      <Text style={styles.viewAllFirmStatText}>{firm.lawyers} lawyers</Text>
+                    </View>
+                    <View style={styles.viewAllFirmStat}>
+                      <ProfessionalIcon type="LOCATION" size={14} color="#6c757d" />
+                      <Text style={styles.viewAllFirmStatText}>{firm.location}</Text>
+                    </View>
+                  </View>
+                </View>
+              </TouchableOpacity>
+            ))}
+          </View>
+
+          {/* Bottom Spacing */}
+          <View style={styles.viewAllBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
+
+  const renderRegisterScreen = () => {
+    const handleRegisterFieldChange = (field, value) => {
+      setRegisterForm(prev => ({
+        ...prev,
+        [field]: value
+      }));
+    };
+
+    const handleRegister = () => {
+      // Validate form
+      if (!registerForm.firstName.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter your first name.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (!registerForm.lastName.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter your last name.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (!registerForm.phone.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter your phone number.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (!registerForm.email.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter your email address.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (!registerForm.password.trim()) {
+        showCustomAlert(
+          'warning',
+          'Missing Information',
+          'Please enter a password.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      if (registerForm.password !== registerForm.confirmPassword) {
+        showCustomAlert(
+          'warning',
+          'Password Mismatch',
+          'Passwords do not match. Please try again.',
+          [{ text: 'OK', style: 'primary' }]
+        );
+        return;
+      }
+
+      // Update user profile with registration data
+      setUserProfile(prev => ({
+        ...prev,
+        fullName: `${registerForm.firstName} ${registerForm.lastName}`,
+        email: registerForm.email,
+        phone: registerForm.phone
+      }));
+
+      showCustomAlert(
+        'success',
+        'Registration Successful!',
+        'Welcome to LawGo! Your account has been created successfully.',
+        [
+          {
+            text: 'Continue',
+            style: 'primary',
+            onPress: () => {
+              setShowRegister(false);
+              setCurrentScreen('categories');
+            }
+          }
+        ]
+      );
+    };
+
+    const handleGoogleRegister = () => {
+      // Simulate Google registration
+      showCustomAlert(
+        'success',
+        'Google Registration',
+        'Google registration will be implemented. For now, continuing with demo account.',
+        [
+          {
+            text: 'Continue',
+            style: 'primary',
+            onPress: () => {
+              setUserProfile(prev => ({
+                ...prev,
+                fullName: 'John Smith',
+                email: 'john.smith@gmail.com',
+                phone: '+1 234 567 8900'
+              }));
+              setShowRegister(false);
+              setCurrentScreen('categories');
+            }
+          }
+        ]
+      );
+    };
+
+    return (
+      <View style={styles.registerContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.registerHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowRegister(false)}
+            style={styles.registerBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <View style={styles.registerLogoContainer}>
+            <View style={styles.registerScalesIcon}>
+              <Text style={styles.registerScalesText}>⚖️</Text>
+            </View>
+            <Text style={styles.registerAppName}>LawGo</Text>
+          </View>
+          <View style={styles.registerHeaderPlaceholder} />
+        </View>
+
+        <ScrollView style={styles.registerContent} showsVerticalScrollIndicator={false}>
+          <View style={styles.registerForm}>
+            <Text style={styles.registerTitle}>Create Account</Text>
+            <Text style={styles.registerSubtitle}>
+              Join LawGo to get access to the best lawyers
+            </Text>
+
+            {/* Name Fields */}
+            <View style={styles.registerNameRow}>
+              <View style={styles.registerNameField}>
+                <Text style={styles.registerFieldLabel}>First Name</Text>
+                <TextInput
+                  style={styles.registerInput}
+                  placeholder="John"
+                  value={registerForm.firstName}
+                  onChangeText={(value) => handleRegisterFieldChange('firstName', value)}
+                />
+              </View>
+              <View style={styles.registerNameField}>
+                <Text style={styles.registerFieldLabel}>Last Name</Text>
+                <TextInput
+                  style={styles.registerInput}
+                  placeholder="Doe"
+                  value={registerForm.lastName}
+                  onChangeText={(value) => handleRegisterFieldChange('lastName', value)}
+                />
+              </View>
+            </View>
+
+            {/* Contact Fields */}
+            <View style={styles.registerFieldContainer}>
+              <Text style={styles.registerFieldLabel}>Phone Number</Text>
+              <TextInput
+                style={styles.registerInput}
+                placeholder="+1 234 567 8900"
+                value={registerForm.phone}
+                onChangeText={(value) => handleRegisterFieldChange('phone', value)}
+                keyboardType="phone-pad"
+              />
+            </View>
+
+            <View style={styles.registerFieldContainer}>
+              <Text style={styles.registerFieldLabel}>Email Address</Text>
+              <TextInput
+                style={styles.registerInput}
+                placeholder="john.doe@email.com"
+                value={registerForm.email}
+                onChangeText={(value) => handleRegisterFieldChange('email', value)}
+                keyboardType="email-address"
+                autoCapitalize="none"
+              />
+            </View>
+
+            {/* Password Fields */}
+            <View style={styles.registerFieldContainer}>
+              <Text style={styles.registerFieldLabel}>Password</Text>
+              <TextInput
+                style={styles.registerInput}
+                placeholder="Enter password"
+                value={registerForm.password}
+                onChangeText={(value) => handleRegisterFieldChange('password', value)}
+                secureTextEntry
+              />
+            </View>
+
+            <View style={styles.registerFieldContainer}>
+              <Text style={styles.registerFieldLabel}>Confirm Password</Text>
+              <TextInput
+                style={styles.registerInput}
+                placeholder="Confirm password"
+                value={registerForm.confirmPassword}
+                onChangeText={(value) => handleRegisterFieldChange('confirmPassword', value)}
+                secureTextEntry
+              />
+            </View>
+
+            {/* Register Button */}
+            <TouchableOpacity 
+              style={styles.registerBtn}
+              onPress={handleRegister}
+            >
+              <Text style={styles.registerBtnText}>Create Account</Text>
+            </TouchableOpacity>
+
+            {/* Divider */}
+            <View style={styles.registerDivider}>
+              <View style={styles.registerDividerLine} />
+              <Text style={styles.registerDividerText}>OR</Text>
+              <View style={styles.registerDividerLine} />
+            </View>
+
+            {/* Google Register Button */}
+            <TouchableOpacity 
+              style={styles.registerGoogleBtn}
+              onPress={handleGoogleRegister}
+            >
+              <ProfessionalIcon type="GOOGLE" size={20} color="#4285F4" />
+              <Text style={styles.registerGoogleBtnText}>Continue with Google</Text>
+            </TouchableOpacity>
+
+            {/* Login Link */}
+            <View style={styles.registerLoginSection}>
+              <Text style={styles.registerLoginPrompt}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => setShowRegister(false)}>
+                <Text style={styles.registerLoginLink}>Login here</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </ScrollView>
+      </View>
+    );
+  };
+
   // Render current screen
   // Main render function
+  if (showRegister) {
+    return (
+      <>
+        {renderRegisterScreen()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showRatingPage) {
+    return (
+      <>
+        {renderRatingPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showRescheduleBooking) {
+    return (
+      <>
+        {renderRescheduleBookingScreen()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showAllHomeLawFirms) {
+    return (
+      <>
+        {renderAllHomeLawFirmsPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showViewAllLawyers) {
+    return (
+      <>
+        {renderViewAllLawyersPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showLawFirmDetails) {
+    return (
+      <>
+        {renderLawFirmDetailsPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showViewAllFirms) {
+    return (
+      <>
+        {renderViewAllFirmsPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showServicesPage) {
+    return (
+      <>
+        {renderServicesPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showEditProfile) {
+    return (
+      <>
+        {renderEditProfilePage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showLogoutConfirmation) {
+    return (
+      <>
+        {renderLogoutConfirmationPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showProfilePage) {
+    return (
+      <>
+        {renderUserProfilePage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
   if (showBookingDetails) {
-    return renderBookingDetailsScreen();
+    return (
+      <>
+        {renderBookingDetailsScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showBookings) {
-    return renderMyBookingsScreen();
+    return (
+      <>
+        {renderMyBookingsScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showAppointmentConfirmation) {
-    return renderAppointmentConfirmationScreen();
+    return (
+      <>
+        {renderAppointmentConfirmationScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showReviewBooking) {
-    return renderReviewBookingScreen();
+    return (
+      <>
+        {renderReviewBookingScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showAppointmentBooking) {
-    return renderAppointmentBookingScreen();
+    return (
+      <>
+        {renderAppointmentBookingScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showLawyerDetails) {
-    return renderLawyerDetailsScreen();
+    return (
+      <>
+        {renderLawyerDetailsScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showCategoryConfirmation) {
-    return renderCategoryConfirmationScreen();
+    return (
+      <>
+        {renderCategorySelectionPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showSeeAllCategoriesSelection) {
+    return (
+      <>
+        {renderSeeAllCategoriesSelectionScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showAllCategories) {
-    return renderAllCategoriesScreen();
+    return (
+      <>
+        {renderAllCategoriesScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
   
   if (showAllLawyers) {
-    return renderAllLawyersScreen();
+    return (
+      <>
+        {renderAllLawyersScreen()}
+        {renderCustomModal()}
+      </>
+    );
   }
 
+  // Handler functions
+  const handleHomeLawFirmClick = (firm) => {
+    setSelectedLawFirm(firm);
+    setShowLawFirmDetails(true);
+  };
+
+  const handleHomeSeeAll = () => {
+    if (homeSliderMode === 'lawyers') {
+      setShowAllLawyers(true);
+    } else {
+      setShowAllHomeLawFirms(true);
+    }
+  };
+
+  const getCurrentScreen = () => {
   switch (currentScreen) {
     case 'splash':
       return renderSplashScreen();
@@ -2052,11 +6076,21 @@ export default function App() {
       return renderLoginScreen();
     case 'categories':
       return renderCategoriesScreen();
+    case 'lawFirmRegistration':
+      return renderLawFirmRegistrationScreen();
     case 'home':
       return renderHomeScreen();
     default:
       return renderSplashScreen();
   }
+  };
+
+  return (
+    <>
+      {getCurrentScreen()}
+      {renderCustomModal()}
+    </>
+  );
 }
 
 const styles = StyleSheet.create({
@@ -2102,83 +6136,149 @@ const styles = StyleSheet.create({
   // Onboarding Screen Styles
   onboardingContainer: {
     flex: 1,
-    backgroundColor: '#2E4A6B',
+    backgroundColor: '#f8f9fa',
   },
   skipButton: {
     position: 'absolute',
     top: 50,
     right: 20,
     zIndex: 1,
-    backgroundColor: 'rgba(255,255,255,0.2)',
-    paddingHorizontal: 15,
-    paddingVertical: 8,
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    borderWidth: 2,
+    borderColor: '#2E4A6B',
     borderRadius: 20,
+    backgroundColor: 'rgba(255, 255, 255, 0.9)',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
   },
   skipText: {
-    color: '#ffffff',
-    fontSize: 14,
+    color: '#2E4A6B',
+    fontSize: 16,
     fontWeight: '600',
   },
   onboardingContent: {
     flex: 1,
     justifyContent: 'center',
     alignItems: 'center',
-    paddingHorizontal: 40,
+    paddingHorizontal: 0,
   },
-  imageContainer: {
-    width: 200,
-    height: 200,
-    borderRadius: 100,
-    backgroundColor: 'rgba(255,255,255,0.1)',
-    justifyContent: 'center',
-    alignItems: 'center',
-    marginBottom: 60,
+  diamondImageContainer: {
+    width: '100%',
+    height: 500,
+    marginBottom: 30,
+    paddingHorizontal: 10,
   },
-  onboardingImage: {
-    fontSize: 80,
+  diamondGrid: {
+    width: '100%',
+    height: '100%',
+    position: 'relative',
+  },
+  diamondCard: {
+    position: 'absolute',
+    width: 220,
+    height: 220,
+    backgroundColor: '#ffffff',
+    borderRadius: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 12,
+    overflow: 'hidden',
+    transform: [{ rotate: '45deg' }],
+  },
+  topDiamond: {
+    top: 30,
+    left: '50%',
+    marginLeft: -110,
+    zIndex: 1,
+  },
+  leftDiamond: {
+    top: '50%',
+    marginTop: -110,
+    left: -40,
+    zIndex: 2,
+  },
+  rightDiamond: {
+    top: '50%',
+    marginTop: -110,
+    right: -40,
+    zIndex: 2,
+  },
+  bottomDiamond: {
+    bottom: 30,
+    left: '50%',
+    marginLeft: -130,
+    zIndex: 3,
+    width: 260,
+    height: 260,
+    borderRadius: 32,
+  },
+  diamondImage: {
+    width: '100%',
+    height: '100%',
+    transform: [{ rotate: '-45deg' }],
+    borderRadius: 28,
   },
   onboardingInfo: {
     alignItems: 'center',
+    paddingHorizontal: 20,
   },
   onboardingTitle: {
-    fontSize: 28,
+    fontSize: 32,
     fontWeight: 'bold',
-    color: '#ffffff',
+    color: '#2d3748',
     textAlign: 'center',
     marginBottom: 15,
+    lineHeight: 38,
   },
   onboardingSubtitle: {
     fontSize: 16,
-    color: '#B8C5D1',
+    color: '#718096',
     textAlign: 'center',
     marginBottom: 40,
+    lineHeight: 24,
+    maxWidth: 280,
   },
   pagination: {
     flexDirection: 'row',
     justifyContent: 'center',
+    marginBottom: 20,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: 'rgba(255,255,255,0.3)',
-    marginHorizontal: 4,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#e2e8f0',
+    marginHorizontal: 6,
   },
   activeDot: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2E4A6B',
+  },
+  onboardingNavigation: {
+    paddingHorizontal: 40,
+    paddingBottom: 50,
   },
   continueButton: {
-    backgroundColor: '#ffffff',
-    marginHorizontal: 40,
-    marginBottom: 60,
-    paddingVertical: 15,
+    backgroundColor: '#2E4A6B',
+    paddingVertical: 18,
     borderRadius: 25,
     alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
   },
   continueText: {
-    color: '#2E4A6B',
-    fontSize: 16,
-    fontWeight: '600',
+    color: '#ffffff',
+    fontSize: 18,
+    fontWeight: 'bold',
+    letterSpacing: 0.5,
   },
 
   // Login Screen Styles
@@ -2308,6 +6408,43 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
+  roleSelectionBar: {
+    flexDirection: 'row',
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 4,
+    marginHorizontal: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  roleButton: {
+    flex: 1,
+    paddingVertical: 12,
+    paddingHorizontal: 16,
+    borderRadius: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  activeRoleButton: {
+    backgroundColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  roleButtonText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#8A8A8A',
+  },
+  activeRoleButtonText: {
+    color: '#ffffff',
+  },
   categoriesHeader: {
     flexDirection: 'row',
     justifyContent: 'space-between',
@@ -2319,11 +6456,6 @@ const styles = StyleSheet.create({
   backArrow: {
     fontSize: 24,
     color: '#2E4A6B',
-  },
-  skipLink: {
-    fontSize: 16,
-    color: '#2E4A6B',
-    fontWeight: '600',
   },
   categoriesContent: {
     flex: 1,
@@ -2373,42 +6505,76 @@ const styles = StyleSheet.create({
     fontWeight: '600',
   },
   messageSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 4,
     marginBottom: 30,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  messageSectionHeader: {
+    alignItems: 'center',
+    marginBottom: 24,
+    paddingBottom: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
   },
   messageTitle: {
-    fontSize: 18,
+    fontSize: 20,
     fontWeight: 'bold',
     color: '#2E4A6B',
     textAlign: 'center',
-    marginBottom: 10,
+    marginBottom: 8,
   },
   optional: {
-    fontWeight: 'normal',
-    color: '#8A8A8A',
+    fontWeight: '500',
+    color: '#28a745',
+    fontSize: 16,
   },
   messageSubtitle: {
-    fontSize: 14,
-    color: '#8A8A8A',
+    fontSize: 15,
+    color: '#6c757d',
     textAlign: 'center',
-    lineHeight: 20,
-    marginBottom: 20,
+    lineHeight: 22,
+    paddingHorizontal: 10,
+  },
+  messageInputSection: {
+    width: '100%',
   },
   messageLabel: {
     fontSize: 16,
     color: '#2E4A6B',
-    marginBottom: 10,
+    marginBottom: 12,
     fontWeight: '600',
   },
   messageInput: {
-    borderWidth: 1,
-    borderColor: '#E0E0E0',
-    borderRadius: 8,
-    paddingHorizontal: 15,
-    paddingVertical: 15,
-    fontSize: 16,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 16,
+    fontSize: 15,
     backgroundColor: '#ffffff',
-    minHeight: 80,
+    minHeight: 120,
     textAlignVertical: 'top',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+    fontFamily: 'System',
+    lineHeight: 20,
+  },
+  messageHint: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginTop: 8,
+    fontStyle: 'italic',
+    textAlign: 'center',
   },
   proceedBtn: {
     backgroundColor: '#2E4A6B',
@@ -2688,142 +6854,132 @@ const styles = StyleSheet.create({
     color: '#2E4A6B',
   },
   
-  // Category Confirmation Screen Styles
-  confirmationContainer: {
+  // Category Selection Page Styles - Completely New
+  categorySelectionPageWrapper: {
     flex: 1,
-    backgroundColor: 'rgba(0, 0, 0, 0.5)',
-    justifyContent: 'center',
-    alignItems: 'center',
+    backgroundColor: '#ffffff',
+  },
+  categorySelectionScrollView: {
+    flex: 1,
     paddingHorizontal: 20,
   },
-  confirmationOverlay: {
-    position: 'absolute',
-    top: 0,
-    left: 0,
-    right: 0,
-    bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.3)',
-  },
-  confirmationCard: {
-    backgroundColor: '#ffffff',
-    borderRadius: 20,
-    padding: 30,
-    width: '100%',
-    maxWidth: 400,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 10 },
-    shadowOpacity: 0.3,
-    shadowRadius: 20,
-    elevation: 10,
-  },
-  confirmationHeader: {
+  categoryPageTitleSection: {
     alignItems: 'center',
-    marginBottom: 25,
+    paddingTop: 60,
+    paddingBottom: 30,
   },
-  confirmationTitle: {
+  categoryPageMainTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  categoryPageSubTitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+  },
+  selectedCategoryShowcase: {
+    alignItems: 'center',
+    paddingVertical: 40,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 20,
+    marginBottom: 30,
+  },
+  categoryIconCircle: {
+    width: 100,
+    height: 100,
+    borderRadius: 50,
+    backgroundColor: '#ffffff',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  selectedCategoryLabel: {
     fontSize: 24,
     fontWeight: 'bold',
     color: '#2E4A6B',
     marginBottom: 8,
   },
-  confirmationSubtitle: {
+  selectedCategoryDescription: {
     fontSize: 16,
     color: '#6c757d',
     textAlign: 'center',
   },
-  confirmationCategoryDisplay: {
-    alignItems: 'center',
-    marginBottom: 25,
-    paddingVertical: 20,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 15,
+  availableServicesSection: {
+    marginBottom: 30,
   },
-  confirmationCategoryIcon: {
-    width: 80,
-    height: 80,
-    borderRadius: 40,
-    backgroundColor: '#2E4A6B',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginBottom: 15,
-  },
-  confirmationCategoryIconText: {
-    fontSize: 40,
-  },
-  confirmationCategoryName: {
-    fontSize: 22,
+  availableServicesHeading: {
+    fontSize: 18,
     fontWeight: 'bold',
     color: '#2E4A6B',
-    marginBottom: 8,
+    marginBottom: 20,
   },
-  confirmationCategoryDescription: {
-    fontSize: 14,
-    color: '#6c757d',
-    textAlign: 'center',
-  },
-  confirmationServicesPreview: {
-    marginBottom: 25,
-  },
-  confirmationServicesTitle: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#2E4A6B',
-    marginBottom: 15,
-  },
-  confirmationServicesList: {
+  servicesListContainer: {
     backgroundColor: '#f8f9fa',
-    borderRadius: 10,
-    padding: 15,
+    borderRadius: 15,
+    padding: 20,
   },
-  confirmationServiceItem: {
+  serviceItemRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    paddingVertical: 8,
+    marginBottom: 8,
   },
-  confirmationServiceIcon: {
-    fontSize: 20,
-    marginRight: 12,
-    width: 30,
-  },
-  confirmationServiceName: {
-    fontSize: 14,
+  serviceItemLabel: {
+    fontSize: 16,
     color: '#2E4A6B',
-    flex: 1,
+    marginLeft: 15,
+    fontWeight: '500',
   },
-  confirmationMoreServices: {
-    fontSize: 12,
+  moreServicesIndicator: {
+    fontSize: 14,
     color: '#6c757d',
     fontStyle: 'italic',
     textAlign: 'center',
-    marginTop: 5,
+    marginTop: 10,
   },
-  confirmationButtons: {
+  categoryPageActionButtons: {
     flexDirection: 'row',
-    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
     gap: 15,
   },
-  confirmationCancelButton: {
+  cancelSelectionButton: {
     flex: 1,
     backgroundColor: '#f8f9fa',
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
     borderWidth: 1,
     borderColor: '#e9ecef',
   },
-  confirmationCancelText: {
+  cancelSelectionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#6c757d',
   },
-  confirmationConfirmButton: {
+  confirmSelectionButton: {
     flex: 1,
     backgroundColor: '#2E4A6B',
     borderRadius: 12,
-    paddingVertical: 15,
+    paddingVertical: 16,
     alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
   },
-  confirmationConfirmText: {
+  confirmSelectionButtonText: {
     fontSize: 16,
     fontWeight: '600',
     color: '#ffffff',
@@ -2870,12 +7026,17 @@ const styles = StyleSheet.create({
   lawyerHeroSection: {
     backgroundColor: '#2E4A6B',
     paddingHorizontal: 20,
-    paddingVertical: 30,
+    paddingVertical: 50,
     alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 400,
   },
   lawyerProfileImageContainer: {
     position: 'relative',
-    marginBottom: 20,
+    marginBottom: 50,
+    alignItems: 'center',
+    justifyContent: 'center',
+    alignSelf: 'center',
   },
   lawyerProfileImage: {
     width: 120,
@@ -2884,6 +7045,7 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 4 },
     shadowOpacity: 0.3,
@@ -2897,6 +7059,7 @@ const styles = StyleSheet.create({
     width: 120,
     height: 120,
     borderRadius: 60,
+    alignSelf: 'center',
   },
   lawyerOnlineIndicator: {
     position: 'absolute',
@@ -2913,14 +7076,15 @@ const styles = StyleSheet.create({
     fontSize: 28,
     fontWeight: 'bold',
     color: '#ffffff',
-    marginBottom: 8,
+    marginBottom: 15,
     textAlign: 'center',
+    marginTop: 10,
   },
   lawyerProfileSpecialty: {
     fontSize: 16,
     color: '#ffffff',
     opacity: 0.9,
-    marginBottom: 25,
+    marginBottom: 40,
     textAlign: 'center',
   },
   lawyerQuickStats: {
@@ -3791,6 +7955,25 @@ const styles = StyleSheet.create({
     shadowRadius: 20,
     elevation: 10,
   },
+  confirmationPageHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingBottom: 20,
+    marginBottom: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  confirmationBackButton: {
+    padding: 10,
+  },
+  confirmationPageTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    flex: 1,
+  },
   confirmationIconContainer: {
     alignItems: 'center',
     marginBottom: 25,
@@ -3956,6 +8139,9 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 20,
     paddingTop: 20,
+  },
+  bookingsListContent: {
+    paddingBottom: 100,
   },
   bookingCard: {
     backgroundColor: '#ffffff',
@@ -4204,7 +8390,24 @@ const styles = StyleSheet.create({
     backgroundColor: '#ffffff',
     borderTopWidth: 1,
     borderTopColor: '#e9ecef',
-    gap: 15,
+    gap: 10,
+  },
+  rateLawyerButton: {
+    width: 120,
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    paddingVertical: 15,
+    alignItems: 'center',
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  rateLawyerButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
   },
   rescheduleButton: {
     flex: 1,
@@ -4398,5 +8601,3153 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#2E4A6B',
     fontWeight: '600',
+  },
+  
+  // Rating Page Styles
+  ratingContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  ratingHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  ratingBackButton: {
+    padding: 10,
+  },
+  ratingTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    flex: 1,
+  },
+  ratingContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  
+  // Lawyer Card Styles
+  ratingLawyerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 20,
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ratingLawyerContent: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingLawyerAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#f0f0f0',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 15,
+  },
+  ratingLawyerProfileImage: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+  },
+  ratingLawyerInfo: {
+    flex: 1,
+  },
+  ratingLawyerName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 5,
+  },
+  ratingLawyerSpecialty: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 10,
+  },
+  ratingLawyerStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  ratingLawyerStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginRight: 15,
+  },
+  ratingLawyerStatText: {
+    fontSize: 12,
+    color: '#2E4A6B',
+    marginLeft: 5,
+    fontWeight: '600',
+  },
+  
+  // Consultation Card Styles
+  ratingConsultationCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ratingConsultationTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 20,
+  },
+  ratingConsultationList: {
+    gap: 15,
+  },
+  ratingConsultationRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  ratingConsultationLabel: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  ratingConsultationValue: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+  },
+  
+  // Feedback Card Styles
+  ratingFeedbackCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ratingFeedbackTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 5,
+  },
+  ratingFeedbackSubtitle: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 20,
+  },
+  ratingMessageLabel: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  ratingMessageInput: {
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 8,
+    padding: 15,
+    fontSize: 14,
+    color: '#2E4A6B',
+    marginBottom: 20,
+    minHeight: 100,
+    textAlignVertical: 'top',
+  },
+  ratingUploadSection: {
+    marginBottom: 10,
+  },
+  ratingUploadLabel: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    marginBottom: 10,
+  },
+  ratingUploadField: {
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 8,
+    padding: 15,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'flex-end',
+  },
+  
+  // Stars Card Styles
+  ratingStarsCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  ratingStarsTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  ratingStarsContainer: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  ratingStarButton: {
+    padding: 5,
+    marginHorizontal: 5,
+  },
+  ratingSelectedText: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  
+  // Footer Styles
+  ratingFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  ratingSubmitButton: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 12,
+    paddingVertical: 18,
+    alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  ratingSubmitText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  
+  // User Profile Page Styles
+  userProfilePageContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  userProfilePageHeader: {
+    alignItems: 'center',
+    paddingTop: 60,
+    paddingBottom: 20,
+    backgroundColor: '#f8f9fa',
+  },
+  userProfilePageTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  userProfilePageContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  userProfileInfoCard: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 20,
+    padding: 30,
+    alignItems: 'center',
+    marginBottom: 30,
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  userProfileAvatarContainer: {
+    marginBottom: 20,
+  },
+  userProfileAvatar: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 3,
+    borderColor: '#ffffff',
+    backgroundColor: '#2E4A6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  userProfileName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 20,
+  },
+  userProfileContactInfo: {
+    alignItems: 'center',
+    gap: 10,
+  },
+  userProfileContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+  },
+  userProfileContactText: {
+    fontSize: 16,
+    color: '#ffffff',
+    fontWeight: '500',
+  },
+  userProfileMenuSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 15,
+    marginBottom: 30,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  userProfileMenuItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingVertical: 18,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f9fa',
+  },
+  userProfileMenuItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 15,
+  },
+  userProfileMenuItemText: {
+    fontSize: 16,
+    color: '#2E4A6B',
+    fontWeight: '500',
+  },
+  userProfileComingSoonBadge: {
+    backgroundColor: '#FFD700',
+    borderRadius: 12,
+    paddingHorizontal: 12,
+    paddingVertical: 4,
+  },
+  userProfileComingSoonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  
+  // Edit Profile Page Styles
+  editProfileContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  editProfileHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 16,
+    paddingBottom: 16,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  editProfileBackButton: {
+    padding: 8,
+  },
+  editProfileTitle: {
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2E4A6B',
+    flex: 1,
+    textAlign: 'center',
+  },
+  editProfileSaveButton: {
+    backgroundColor: '#007AFF',
+    borderRadius: 10,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    shadowColor: '#007AFF',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  editProfileSaveButtonDisabled: {
+    backgroundColor: '#e9ecef',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  editProfileSaveText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  editProfileSaveTextDisabled: {
+    color: '#6c757d',
+  },
+  editProfileContent: {
+    flex: 1,
+    paddingHorizontal: 16,
+  },
+  editProfilePhotoSection: {
+    alignItems: 'center',
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    marginTop: 16,
+    borderRadius: 12,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  editProfilePhotoContainer: {
+    marginBottom: 12,
+  },
+  editProfileAvatar: {
+    width: 64,
+    height: 64,
+    borderRadius: 32,
+    backgroundColor: '#2E4A6B',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.2,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  editProfileChangePhotoButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  editProfileChangePhotoText: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '500',
+  },
+  editProfileSection: {
+    backgroundColor: '#ffffff',
+    marginTop: 16,
+    borderRadius: 12,
+    padding: 16,
+    marginHorizontal: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  editProfileSectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    marginBottom: 16,
+    paddingBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f8f9fa',
+  },
+  editProfileSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E4A6B',
+  },
+  editProfileFormRow: {
+    flexDirection: 'row',
+    gap: 12,
+    marginBottom: 16,
+  },
+  editProfileFormField: {
+    flex: 1,
+  },
+  editProfileFieldLabel: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginBottom: 6,
+    fontWeight: '600',
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
+  },
+  editProfileTextInput: {
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    fontSize: 14,
+    color: '#2E4A6B',
+    backgroundColor: '#ffffff',
+    fontWeight: '500',
+  },
+  editProfileChangesIndicator: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    backgroundColor: '#d4edda',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    marginTop: 16,
+    marginHorizontal: 4,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  editProfileChangesText: {
+    fontSize: 12,
+    color: '#155724',
+    fontWeight: '600',
+  },
+  
+  // Logout Confirmation Page Styles
+  logoutConfirmationContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  logoutConfirmationHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  logoutConfirmationBackButton: {
+    padding: 10,
+  },
+  logoutConfirmationTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    textAlign: 'center',
+  },
+  logoutConfirmationContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  logoutConfirmationIconContainer: {
+    alignItems: 'center',
+    paddingVertical: 40,
+  },
+  logoutConfirmationIconCircle: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+  },
+  logoutConfirmationMessageSection: {
+    alignItems: 'center',
+    marginBottom: 40,
+  },
+  logoutConfirmationMainText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 10,
+  },
+  logoutConfirmationSubText: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  logoutConfirmationSummarySection: {
+    backgroundColor: '#f8f9fa',
+    borderRadius: 15,
+    padding: 20,
+    marginBottom: 30,
+  },
+  logoutConfirmationSummaryTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  logoutConfirmationSummaryItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  logoutConfirmationSummaryLabel: {
+    fontSize: 16,
+    color: '#6c757d',
+  },
+  logoutConfirmationSummaryValue: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  logoutConfirmationButtonsSection: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    gap: 15,
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  logoutConfirmationCancelButton: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  logoutConfirmationCancelButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  logoutConfirmationLogoutButton: {
+    flex: 1,
+    backgroundColor: '#dc3545',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#dc3545',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  logoutConfirmationLogoutButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#ffffff',
+  },
+  
+  // Custom Modal Styles
+  customModalOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.5)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  customModalContainer: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 24,
+    marginHorizontal: 32,
+    maxWidth: 320,
+    width: '100%',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 10 },
+    shadowOpacity: 0.25,
+    shadowRadius: 20,
+    elevation: 10,
+  },
+  customModalIconContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  customModalContent: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  customModalTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  customModalMessage: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    lineHeight: 22,
+  },
+  customModalButtonsContainer: {
+    flexDirection: 'row',
+    gap: 12,
+    width: '100%',
+  },
+  customModalButton: {
+    flex: 1,
+    borderRadius: 12,
+    paddingVertical: 14,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  customModalButtonPrimary: {
+    backgroundColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  customModalButtonDestructive: {
+    backgroundColor: '#dc3545',
+    shadowColor: '#dc3545',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  customModalButtonCancel: {
+    backgroundColor: '#f8f9fa',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  customModalButtonText: {
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  customModalButtonTextPrimary: {
+    color: '#ffffff',
+  },
+  customModalButtonTextDestructive: {
+    color: '#ffffff',
+  },
+  customModalButtonTextCancel: {
+    color: '#6c757d',
+  },
+  
+  // Reschedule Booking Styles
+  rescheduleContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  rescheduleHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+  },
+  rescheduleBackButton: {
+    padding: 10,
+  },
+  rescheduleTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    textAlign: 'center',
+  },
+  rescheduleContent: {
+    flex: 1,
+    paddingHorizontal: 20,
+  },
+  rescheduleBookingInfo: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rescheduleBookingTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  rescheduleBookingDetails: {
+    gap: 4,
+  },
+  rescheduleBookingLawyer: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  rescheduleBookingCurrent: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  rescheduleCalendarSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rescheduleCalendarHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  rescheduleCalendarTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  rescheduleCalendarWeekHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    marginBottom: 10,
+    paddingHorizontal: 5,
+  },
+  rescheduleCalendarWeekDay: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#6c757d',
+    textAlign: 'center',
+    width: 35,
+  },
+  rescheduleCalendarGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-around',
+  },
+  calendarDay: {
+    width: 35,
+    height: 35,
+    borderRadius: 18,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  calendarDayEmpty: {
+    width: 35,
+    height: 35,
+    marginBottom: 8,
+  },
+  calendarDaySelected: {
+    backgroundColor: '#2E4A6B',
+  },
+  calendarDayToday: {
+    borderWidth: 2,
+    borderColor: '#FFD700',
+  },
+  calendarDayText: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '500',
+  },
+  calendarDayTextSelected: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  calendarDayTextToday: {
+    color: '#FFD700',
+    fontWeight: 'bold',
+  },
+  rescheduleTimeSection: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  rescheduleTimeSectionTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E4A6B',
+    marginBottom: 16,
+  },
+  rescheduleTimeSlots: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 10,
+  },
+  rescheduleTimeSlot: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#f8f9fa',
+    borderRadius: 8,
+    paddingVertical: 12,
+    paddingHorizontal: 8,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  rescheduleTimeSlotSelected: {
+    backgroundColor: '#2E4A6B',
+    borderColor: '#2E4A6B',
+  },
+  rescheduleTimeSlotText: {
+    fontSize: 12,
+    color: '#2E4A6B',
+    fontWeight: '500',
+    textAlign: 'center',
+  },
+  rescheduleTimeSlotTextSelected: {
+    color: '#ffffff',
+    fontWeight: 'bold',
+  },
+  rescheduleSelectedInfo: {
+    backgroundColor: '#d4edda',
+    borderRadius: 12,
+    padding: 16,
+    marginBottom: 20,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  rescheduleSelectedTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#155724',
+    marginBottom: 8,
+  },
+  rescheduleSelectedDetail: {
+    fontSize: 14,
+    color: '#155724',
+    marginBottom: 4,
+  },
+  rescheduleFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  rescheduleConfirmButton: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  rescheduleConfirmButtonDisabled: {
+    backgroundColor: '#e9ecef',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  rescheduleConfirmButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  rescheduleConfirmButtonTextDisabled: {
+    color: '#6c757d',
+  },
+  
+  // Login Register Section Styles
+  registerSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 30,
+    gap: 5,
+  },
+  registerPrompt: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  registerLink: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: 'bold',
+  },
+  
+  // Register Screen Styles
+  registerContainer: {
+    flex: 1,
+    backgroundColor: '#ffffff',
+  },
+  registerHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 60,
+    paddingHorizontal: 20,
+    paddingBottom: 30,
+  },
+  registerBackButton: {
+    padding: 10,
+    width: 44,
+  },
+  registerLogoContainer: {
+    alignItems: 'center',
+    flex: 1,
+  },
+  registerScalesIcon: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: '#ffffff',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 8,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  registerScalesText: {
+    fontSize: 28,
+  },
+  registerAppName: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    letterSpacing: 1,
+  },
+  registerHeaderPlaceholder: {
+    width: 44,
+  },
+  registerContent: {
+    flex: 1,
+  },
+  registerForm: {
+    paddingHorizontal: 20,
+    paddingBottom: 40,
+  },
+  registerTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 8,
+  },
+  registerSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  registerNameRow: {
+    flexDirection: 'row',
+    gap: 15,
+    marginBottom: 20,
+  },
+  registerNameField: {
+    flex: 1,
+  },
+  registerFieldContainer: {
+    marginBottom: 20,
+  },
+  registerFieldLabel: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  registerInput: {
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#2E4A6B',
+    backgroundColor: '#f8f9fa',
+  },
+  registerBtn: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    marginTop: 10,
+    marginBottom: 30,
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  registerBtnText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  registerDivider: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  registerDividerLine: {
+    flex: 1,
+    height: 1,
+    backgroundColor: '#e9ecef',
+  },
+  registerDividerText: {
+    fontSize: 14,
+    color: '#6c757d',
+    paddingHorizontal: 15,
+    fontWeight: '500',
+  },
+  registerGoogleBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    backgroundColor: '#ffffff',
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingVertical: 14,
+    marginBottom: 30,
+    gap: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  registerGoogleBtnText: {
+    fontSize: 16,
+    color: '#2E4A6B',
+    fontWeight: '600',
+  },
+  registerLoginSection: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    alignItems: 'center',
+    gap: 5,
+  },
+  registerLoginPrompt: {
+    fontSize: 14,
+    color: '#6c757d',
+  },
+  registerLoginLink: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: 'bold',
+  },
+  
+  // Updated Categories Screen Styles
+  categoriesScrollView: {
+    flex: 1,
+  },
+  categoriesBackButton: {
+    padding: 8,
+  },
+  categoryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 12,
+    padding: 16,
+    margin: 6,
+    alignItems: 'center',
+    justifyContent: 'center',
+    minHeight: 100,
+    flex: 1,
+    maxWidth: '45%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  activeCategoryCard: {
+    backgroundColor: '#2E4A6B',
+    borderColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOpacity: 0.3,
+    elevation: 6,
+  },
+  categoryIconContainer: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 8,
+  },
+  activeCategoryIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  categoryCardText: {
+    fontSize: 12,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 16,
+  },
+  activeCategoryCardText: {
+    color: '#ffffff',
+  },
+  selectedCategoriesInfo: {
+    backgroundColor: '#d4edda',
+    borderRadius: 12,
+    padding: 16,
+    marginTop: 20,
+    borderWidth: 1,
+    borderColor: '#c3e6cb',
+  },
+  selectedCategoriesTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#155724',
+    marginBottom: 12,
+  },
+  selectedCategoriesList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  selectedCategoryTag: {
+    backgroundColor: '#28a745',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+  },
+  selectedCategoryTagText: {
+    fontSize: 12,
+    color: '#ffffff',
+    fontWeight: '600',
+  },
+  categoriesFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 16,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  proceedBtnDisabled: {
+    backgroundColor: '#e9ecef',
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  proceedTextDisabled: {
+    color: '#6c757d',
+  },
+  
+  // Categories Slider Styles
+  categoriesSliderContainer: {
+    marginBottom: 30,
+  },
+  categoriesSliderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 20,
+    marginBottom: 15,
+  },
+  categoriesSliderTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  seeAllButton: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+  },
+  categorySliderRow: {
+    marginBottom: 15,
+  },
+  categorySliderContent: {
+    paddingLeft: 0,
+    paddingRight: 20,
+  },
+  categorySliderCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginRight: 8,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: 80,
+    height: 90,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  activeCategorySliderCard: {
+    backgroundColor: '#2E4A6B',
+    borderColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOpacity: 0.3,
+    elevation: 6,
+  },
+  categorySliderIconContainer: {
+    width: 28,
+    height: 28,
+    borderRadius: 14,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 6,
+  },
+  activeCategorySliderIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  categorySliderText: {
+    fontSize: 10,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 12,
+  },
+  activeCategorySliderText: {
+    color: '#ffffff',
+  },
+  
+  // Law Firm Registration Screen Styles
+  lawFirmContainer: {
+    flex: 1,
+    backgroundColor: '#f5f5f5',
+  },
+  lawFirmHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lawFirmBackButton: {
+    padding: 8,
+  },
+  lawFirmHeaderTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    textAlign: 'center',
+  },
+  lawFirmHeaderPlaceholder: {
+    width: 40,
+  },
+  lawFirmScrollView: {
+    flex: 1,
+  },
+  lawFirmContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  lawFirmRegistrationCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  lawFirmCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  lawFirmCardIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  lawFirmCardTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  lawFirmForm: {
+    gap: 16,
+  },
+  lawFirmFieldContainer: {
+    marginBottom: 16,
+  },
+  lawFirmFieldLabel: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    marginBottom: 8,
+    fontWeight: '600',
+  },
+  lawFirmInput: {
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    borderRadius: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
+    fontSize: 16,
+    color: '#2E4A6B',
+    backgroundColor: '#f8f9fa',
+  },
+  lawFirmTextArea: {
+    height: 100,
+    textAlignVertical: 'top',
+  },
+  lawFirmPracticeAreas: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 8,
+    elevation: 6,
+  },
+  lawFirmSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  lawFirmSectionSubtitle: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 20,
+    lineHeight: 20,
+  },
+  lawFirmCategoriesSlider: {
+    marginBottom: 20,
+  },
+  lawFirmCategoriesSliderHeader: {
+    marginBottom: 12,
+  },
+  lawFirmCategoriesSliderTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#2E4A6B',
+  },
+  lawFirmSelectedInfo: {
+    marginBottom: 16,
+  },
+  lawFirmSelectedTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  lawFirmSelectedList: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 8,
+  },
+  lawFirmSelectedTag: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 20,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+  },
+  lawFirmSelectedTagText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  lawFirmRemoveButton: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: 'rgba(255, 255, 255, 0.3)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  lawFirmServiceTag: {
+    backgroundColor: '#e9ecef',
+    borderRadius: 16,
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+  },
+  lawFirmServiceTagText: {
+    color: '#6c757d',
+    fontSize: 11,
+    fontWeight: '500',
+  },
+  lawFirmFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  lawFirmProceedBtn: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  lawFirmProceedBtnDisabled: {
+    backgroundColor: '#adb5bd',
+    shadowOpacity: 0.1,
+    elevation: 2,
+  },
+  lawFirmProceedText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  lawFirmProceedTextDisabled: {
+    color: '#6c757d',
+  },
+
+  // See All Categories Selection Screen Styles
+  seeAllCategoriesContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  seeAllCategoriesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingTop: 50,
+    paddingHorizontal: 20,
+    paddingBottom: 20,
+    backgroundColor: '#ffffff',
+    borderBottomWidth: 1,
+    borderBottomColor: '#e9ecef',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  seeAllBackButton: {
+    padding: 8,
+  },
+  seeAllCategoriesTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    textAlign: 'center',
+  },
+  seeAllPlaceholder: {
+    width: 40,
+  },
+  seeAllCategoriesScroll: {
+    flex: 1,
+  },
+  seeAllCategoriesContent: {
+    paddingHorizontal: 20,
+    paddingTop: 20,
+  },
+  seeAllSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 30,
+    lineHeight: 22,
+  },
+  seeAllCategoriesGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  seeAllCategoryCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+    width: '47%',
+    minHeight: 120,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+    marginBottom: 12,
+  },
+  activeSeeAllCategoryCard: {
+    backgroundColor: '#2E4A6B',
+    borderColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOpacity: 0.3,
+    elevation: 6,
+  },
+  seeAllCategoryIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#f8f9fa',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 12,
+  },
+  activeSeeAllCategoryIconContainer: {
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  },
+  seeAllCategoryText: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  activeSeeAllCategoryText: {
+    color: '#ffffff',
+  },
+  removeCategoryButton: {
+    marginLeft: 8,
+    padding: 2,
+  },
+  seeAllCategoriesFooter: {
+    paddingHorizontal: 20,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    borderTopWidth: 1,
+    borderTopColor: '#e9ecef',
+  },
+  seeAllDoneButton: {
+    backgroundColor: '#2E4A6B',
+    borderRadius: 12,
+    paddingVertical: 16,
+    alignItems: 'center',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.3,
+    shadowRadius: 8,
+    elevation: 8,
+  },
+  seeAllDoneButtonText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  
+  // Profile Avatar Image Styles
+  userProfileAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+  },
+  editProfileAvatarImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 35,
+  },
+
+  // Enhanced Services Page Styles
+  servicesContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  
+  // Hero Header Styles
+  servicesHeroHeader: {
+    height: 320,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  servicesHeroBackground: {
+    flex: 1,
+    backgroundColor: '#2E4A6B',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  servicesHeroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  servicesHeroContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 80,
+    justifyContent: 'flex-start',
+  },
+  servicesNavHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#2E4A6B',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  servicesNavTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    flex: 1,
+  },
+  servicesBackButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  servicesFilterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  servicesHeroInfo: {
+    alignItems: 'center',
+    paddingBottom: 20,
+    paddingHorizontal: 10,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  serviceIconContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+  },
+  servicesHeroTitle: {
+    fontSize: 26,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  servicesHeroSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  servicesStatsRow: {
+    position: 'absolute',
+    bottom: 20,
+    left: '7.5%',
+    right: '7.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  serviceStat: {
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: 2,
+  },
+  serviceStatNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  serviceStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  serviceStatDivider: {
+    width: 1,
+    height: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    marginHorizontal: 18,
+    borderRadius: 0.5,
+  },
+  
+  // Content Styles
+  servicesScrollContent: {
+    flex: 1,
+  },
+  serviceDescriptionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    marginHorizontal: 20,
+    marginTop: -15,
+    marginBottom: 20,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  serviceDescriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  serviceDescriptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  serviceDescriptionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    lineHeight: 28,
+  },
+  serviceDescriptionText: {
+    fontSize: 16,
+    color: '#6c757d',
+    lineHeight: 24,
+    marginBottom: 24,
+    textAlign: 'left',
+  },
+  serviceFeatures: {
+    gap: 16,
+  },
+  serviceFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  serviceFeatureText: {
+    fontSize: 15,
+    color: '#2E4A6B',
+    marginLeft: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  
+  // Section Styles
+  servicesSection: {
+    marginBottom: 35,
+    paddingHorizontal: 20,
+  },
+  servicesSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 24,
+    paddingHorizontal: 0,
+  },
+  servicesSectionTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 6,
+    letterSpacing: 0.3,
+  },
+  servicesSectionSubtitle: {
+    fontSize: 15,
+    color: '#6c757d',
+    fontWeight: '500',
+  },
+  sectionViewAllButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 6,
+    paddingHorizontal: 10,
+    backgroundColor: '#f0f7ff',
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: '#e3f2fd',
+    minWidth: 70,
+    maxWidth: 80,
+    marginTop: 4,
+      marginRight: 15,
+  },
+  sectionViewAllText: {
+    fontSize: 12,
+    color: '#2E4A6B',
+    fontWeight: '700',
+    marginRight: 4,
+  },
+  
+  // Law Firms Styles
+  lawFirmsScrollView: {
+    marginHorizontal: -20,
+    paddingVertical: 4,
+  },
+  lawFirmsHorizontalContainer: {
+    flexDirection: 'row',
+    paddingHorizontal: 20,
+    paddingRight: 30,
+    gap: 16,
+  },
+  lawFirmCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    width: 178,
+    height: 280,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    overflow: 'hidden',
+    marginVertical: 4,
+  },
+  lawFirmCardHeader: {
+    position: 'relative',
+    height: 100,
+    backgroundColor: '#f8f9fa',
+    justifyContent: 'center',
+    alignItems: 'center',
+    paddingVertical: 10,
+  },
+  lawFirmImageContainer: {
+    width: 65,
+    height: 65,
+    borderRadius: 32.5,
+    overflow: 'hidden',
+    position: 'relative',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lawFirmImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  lawFirmRatingBadge: {
+    position: 'absolute',
+    top: -8,
+    right: -8,
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    paddingHorizontal: 8,
+    paddingVertical: 5,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 6,
+    elevation: 8,
+    borderWidth: 2,
+    borderColor: '#FFD700',
+    minWidth: 35,
+    justifyContent: 'center',
+  },
+  lawFirmRatingText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginLeft: 3,
+  },
+  lawFirmCardContent: {
+    padding: 16,
+    alignItems: 'center',
+    height: 180,
+    justifyContent: 'flex-start',
+  },
+  lawFirmName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+    textAlign: 'center',
+    lineHeight: 20,
+    numberOfLines: 2,
+    flexShrink: 1,
+  },
+  lawFirmSpecialty: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 14,
+    textAlign: 'center',
+    fontWeight: '500',
+    flexShrink: 1,
+  },
+  lawFirmQuickStats: {
+    gap: 6,
+    width: '100%',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'flex-start',
+  },
+  lawFirmQuickStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 4,
+    flexShrink: 1,
+  },
+  lawFirmQuickStatText: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginLeft: 6,
+    fontWeight: '600',
+    flexShrink: 1,
+    textAlign: 'center',
+  },
+  
+  // Enhanced Lawyer Card Styles
+  lawyersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 18,
+    paddingHorizontal: 4,
+  },
+  serviceLawyerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 18,
+    width: '47%',
+    minHeight: 260,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+  },
+  serviceLawyerHeader: {
+    alignItems: 'center',
+    marginBottom: 18,
+    position: 'relative',
+    width: '100%',
+  },
+  serviceLawyerImageContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  serviceLawyerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  serviceLawyerOnlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#28a745',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  serviceLawyerRatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff8e1',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#f57c00',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  serviceLawyerRating: {
+    fontSize: 13,
+    fontWeight: 'bold',
+    color: '#f57c00',
+    marginLeft: 4,
+  },
+  serviceLawyerInfo: {
+    alignItems: 'center',
+    width: '100%',
+    flex: 1,
+  },
+  serviceLawyerName: {
+    fontSize: 15,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 4,
+    textAlign: 'center',
+    lineHeight: 18,
+  },
+  serviceLawyerSpecialty: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginBottom: 6,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  serviceLawyerExperience: {
+    fontSize: 11,
+    color: '#28a745',
+    marginBottom: 12,
+    fontWeight: '700',
+    textAlign: 'center',
+    backgroundColor: '#f0fff4',
+    paddingHorizontal: 6,
+    paddingVertical: 3,
+    borderRadius: 10,
+  },
+  serviceLawyerStats: {
+    width: '100%',
+    gap: 6,
+    marginBottom: 12,
+  },
+  serviceLawyerStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 1,
+  },
+  serviceLawyerStatText: {
+    fontSize: 10,
+    color: '#6c757d',
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  serviceLawyerFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f7ff',
+    marginTop: 'auto',
+  },
+  serviceLawyerRate: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: 'bold',
+  },
+  serviceLawyerDistance: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  serviceLawyerDistanceText: {
+    fontSize: 11,
+    color: '#6c757d',
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  servicesBottomSpacing: {
+    height: 50,
+  },
+
+  // View All Firms Page Styles
+  viewAllContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  viewAllNavHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#2E4A6B',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  headerPlaceholder: {
+    width: 48,
+    height: 48,
+  },
+  viewAllScrollContent: {
+    flex: 1,
+  },
+  viewAllHeaderInfo: {
+    paddingHorizontal: 20,
+    paddingVertical: 25,
+    backgroundColor: '#ffffff',
+    marginBottom: 20,
+  },
+  viewAllTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  viewAllSubtitle: {
+    fontSize: 15,
+    color: '#6c757d',
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  viewAllFirmsGrid: {
+    paddingHorizontal: 20,
+    gap: 16,
+  },
+  viewAllFirmCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    marginBottom: 12,
+  },
+  viewAllFirmImageContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'hidden',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewAllFirmImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  viewAllFirmInfo: {
+    flex: 1,
+  },
+  viewAllFirmName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  viewAllFirmSpecialty: {
+    fontSize: 14,
+    color: '#6c757d',
+    marginBottom: 6,
+    fontWeight: '500',
+  },
+  viewAllFirmDescription: {
+    fontSize: 13,
+    color: '#6c757d',
+    lineHeight: 18,
+    marginBottom: 10,
+  },
+  viewAllFirmStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 16,
+  },
+  viewAllFirmStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewAllFirmStatText: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  viewAllBottomSpacing: {
+    height: 40,
+  },
+
+  // Law Firm Details Page Styles
+  lawFirmDetailsContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  lawFirmDetailsNavHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#2E4A6B',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  lawFirmDetailsNavTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    flex: 1,
+  },
+  lawFirmDetailsBackButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lawFirmDetailsFilterButton: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lawFirmDetailsScrollContent: {
+    flex: 1,
+  },
+  lawFirmDetailsHeroHeader: {
+    height: 320,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  lawFirmDetailsHeroBackground: {
+    flex: 1,
+    backgroundColor: '#2E4A6B',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  lawFirmDetailsHeroOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+    borderBottomLeftRadius: 30,
+    borderBottomRightRadius: 30,
+  },
+  lawFirmDetailsHeroContent: {
+    flex: 1,
+    paddingHorizontal: 24,
+    paddingTop: 30,
+    paddingBottom: 80,
+    justifyContent: 'flex-start',
+  },
+  lawFirmDetailsHeroInfo: {
+    alignItems: 'center',
+    paddingBottom: 20,
+    paddingHorizontal: 10,
+    flex: 1,
+    justifyContent: 'center',
+  },
+  lawFirmDetailsImageContainer: {
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    backgroundColor: 'rgba(255, 255, 255, 0.25)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 15,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.2,
+    shadowRadius: 8,
+    elevation: 5,
+    overflow: 'hidden',
+  },
+  lawFirmDetailsHeroImage: {
+    width: '100%',
+    height: '100%',
+    borderRadius: 40,
+    resizeMode: 'cover',
+  },
+  lawFirmDetailsHeroTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    textAlign: 'center',
+    marginBottom: 6,
+    letterSpacing: 0.5,
+  },
+  lawFirmDetailsHeroSubtitle: {
+    fontSize: 15,
+    color: 'rgba(255, 255, 255, 0.9)',
+    textAlign: 'center',
+    marginBottom: 20,
+    fontWeight: '500',
+  },
+  lawFirmDetailsStatsRow: {
+    position: 'absolute',
+    bottom: 20,
+    left: '7.5%',
+    right: '7.5%',
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 24,
+  },
+  lawFirmDetailsStat: {
+    alignItems: 'center',
+    flex: 1,
+    paddingVertical: 2,
+  },
+  lawFirmDetailsStatNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 4,
+    textShadowColor: 'rgba(0, 0, 0, 0.2)',
+    textShadowOffset: { width: 0, height: 1 },
+    textShadowRadius: 1,
+  },
+  lawFirmDetailsStatLabel: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.9)',
+    fontWeight: '600',
+    letterSpacing: 0.3,
+  },
+  lawFirmDetailsStatDivider: {
+    width: 1,
+    height: 35,
+    backgroundColor: 'rgba(255, 255, 255, 0.4)',
+    marginHorizontal: 18,
+    borderRadius: 0.5,
+  },
+  lawFirmDetailsDescriptionCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 24,
+    marginHorizontal: 20,
+    marginTop: -15,
+    marginBottom: 20,
+    padding: 28,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.12,
+    shadowRadius: 16,
+    elevation: 10,
+  },
+  lawFirmDetailsDescriptionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 20,
+  },
+  lawFirmDetailsDescriptionIcon: {
+    width: 48,
+    height: 48,
+    borderRadius: 24,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  lawFirmDetailsDescriptionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+    lineHeight: 28,
+  },
+  lawFirmDetailsDescriptionText: {
+    fontSize: 16,
+    color: '#6c757d',
+    lineHeight: 24,
+    marginBottom: 24,
+    textAlign: 'left',
+  },
+  lawFirmDetailsFeatures: {
+    gap: 16,
+  },
+  lawFirmDetailsFeature: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 2,
+  },
+  lawFirmDetailsFeatureText: {
+    fontSize: 15,
+    color: '#2E4A6B',
+    marginLeft: 12,
+    fontWeight: '600',
+    flex: 1,
+  },
+  lawFirmDetailsSection: {
+    marginBottom: 30,
+    paddingHorizontal: 20,
+  },
+  lawFirmDetailsSectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 20,
+  },
+  lawFirmDetailsSectionTitle: {
+    fontSize: 22,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 6,
+    lineHeight: 28,
+  },
+  lawFirmDetailsSectionSubtitle: {
+    fontSize: 15,
+    color: '#6c757d',
+    fontWeight: '500',
+    lineHeight: 20,
+  },
+  lawFirmDetailsServicesGrid: {
+    gap: 16,
+  },
+  lawFirmDetailsServiceCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    marginBottom: 8,
+  },
+  lawFirmDetailsServiceIconContainer: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    backgroundColor: '#e3f2fd',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 16,
+  },
+  lawFirmDetailsServiceInfo: {
+    flex: 1,
+  },
+  lawFirmDetailsServiceName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  lawFirmDetailsServiceDescription: {
+    fontSize: 14,
+    color: '#6c757d',
+    lineHeight: 18,
+  },
+  lawFirmDetailsLawyersGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+    gap: 16,
+  },
+  lawFirmDetailsLawyerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 20,
+    padding: 20,
+    width: '47%',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 6 },
+    shadowOpacity: 0.1,
+    shadowRadius: 16,
+    elevation: 8,
+    marginBottom: 8,
+  },
+  lawFirmDetailsLawyerHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: 12,
+  },
+  lawFirmDetailsLawyerImageContainer: {
+    position: 'relative',
+  },
+  lawFirmDetailsLawyerImage: {
+    width: 50,
+    height: 50,
+    borderRadius: 25,
+    resizeMode: 'cover',
+  },
+  lawFirmDetailsLawyerOnlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    backgroundColor: '#28a745',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  lawFirmDetailsLawyerRatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff3cd',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  lawFirmDetailsLawyerRating: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#856404',
+    marginLeft: 4,
+  },
+  lawFirmDetailsLawyerInfo: {
+    flex: 1,
+  },
+  lawFirmDetailsLawyerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  lawFirmDetailsLawyerSpecialty: {
+    fontSize: 13,
+    color: '#6c757d',
+    marginBottom: 4,
+    fontWeight: '500',
+  },
+  lawFirmDetailsLawyerExperience: {
+    fontSize: 12,
+    color: '#28a745',
+    marginBottom: 10,
+    fontWeight: '600',
+  },
+  lawFirmDetailsLawyerStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  lawFirmDetailsLawyerStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 10,
+    flex: 0.48,
+  },
+  lawFirmDetailsLawyerStatText: {
+    fontSize: 10,
+    color: '#6c757d',
+    marginLeft: 4,
+    fontWeight: '600',
+  },
+  lawFirmDetailsLawyerFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  lawFirmDetailsLawyerRate: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  lawFirmDetailsConsultButton: {
+    backgroundColor: '#2E4A6B',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 4,
+  },
+  lawFirmDetailsConsultButtonText: {
+    fontSize: 12,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  lawFirmDetailsBottomSpacing: {
+    height: 50,
+  },
+
+  // View All Lawyers Page Styles
+  viewAllLawyersContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  viewAllLawyersNavHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#2E4A6B',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  viewAllLawyersScrollContent: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  viewAllLawyersHeaderInfo: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    marginBottom: 16,
+  },
+  viewAllLawyersTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  viewAllLawyersSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    lineHeight: 22,
+  },
+  viewAllLawyersGrid: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  viewAllLawyerCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    width: '47%',
+    minHeight: 260,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+  },
+  viewAllLawyerHeader: {
+    alignItems: 'center',
+    marginBottom: 18,
+    position: 'relative',
+    width: '100%',
+  },
+  viewAllLawyerImageContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'hidden',
+    position: 'relative',
+    marginBottom: 10,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  viewAllLawyerImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  viewAllLawyerOnlineIndicator: {
+    position: 'absolute',
+    bottom: 2,
+    right: 2,
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: '#28a745',
+    borderWidth: 2,
+    borderColor: '#ffffff',
+  },
+  viewAllLawyerRatingContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#fff8e1',
+    borderRadius: 16,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 1 },
+    shadowOpacity: 0.05,
+    shadowRadius: 2,
+    elevation: 1,
+  },
+  viewAllLawyerRating: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#f57c00',
+    marginLeft: 4,
+  },
+  viewAllLawyerInfo: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  viewAllLawyerName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  viewAllLawyerSpecialty: {
+    fontSize: 13,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 6,
+    lineHeight: 18,
+  },
+  viewAllLawyerExperience: {
+    fontSize: 12,
+    color: '#28a745',
+    fontWeight: '600',
+    textAlign: 'center',
+    marginBottom: 12,
+  },
+  viewAllLawyerStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 16,
+    paddingHorizontal: 8,
+  },
+  viewAllLawyerStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+    justifyContent: 'center',
+  },
+  viewAllLawyerStatText: {
+    fontSize: 11,
+    color: '#6c757d',
+    fontWeight: '500',
+    marginLeft: 4,
+    textAlign: 'center',
+  },
+  viewAllLawyerFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    width: '100%',
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: '#f1f3f5',
+  },
+  viewAllLawyerRate: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+  },
+  viewAllLawyerDistance: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  viewAllLawyerDistanceText: {
+    fontSize: 12,
+    color: '#6c757d',
+    marginLeft: 4,
+  },
+  viewAllLawyersBottomSpacing: {
+    height: 40,
+  },
+
+  // Home Toggle Styles
+  sectionTitleWithToggle: {
+    alignItems: 'center',
+  },
+  homeToggleContainer: {
+    flexDirection: 'row',
+    backgroundColor: '#f1f3f5',
+    borderRadius: 20,
+    padding: 4,
+    marginTop: 8,
+  },
+  homeToggleButton: {
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 16,
+    minWidth: 80,
+    alignItems: 'center',
+  },
+  homeToggleButtonActive: {
+    backgroundColor: '#2E4A6B',
+    shadowColor: '#2E4A6B',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  homeToggleText: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#6c757d',
+  },
+  homeToggleTextActive: {
+    color: '#ffffff',
+  },
+
+  // Law Firm Card Styles for Home
+  homeLawFirmCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 16,
+    marginRight: 16,
+    width: 140,
+    alignItems: 'center',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  lawFirmAvatar: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  lawFirmProfileImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  lawFirmName: {
+    fontSize: 14,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 4,
+    lineHeight: 18,
+  },
+  lawFirmSpecialty: {
+    fontSize: 12,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 8,
+    lineHeight: 16,
+  },
+  lawFirmRating: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  lawFirmLawyers: {
+    fontSize: 11,
+    color: '#28a745',
+    fontWeight: '600',
+    textAlign: 'center',
+  },
+
+  // All Home Law Firms Page Styles
+  allHomeLawFirmsContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  allHomeLawFirmsNavHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 50,
+    paddingBottom: 15,
+    backgroundColor: '#2E4A6B',
+    zIndex: 1000,
+    elevation: 5,
+  },
+  allHomeLawFirmsScrollContent: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  allHomeLawFirmsHeaderInfo: {
+    paddingHorizontal: 24,
+    paddingVertical: 20,
+    backgroundColor: '#ffffff',
+    marginBottom: 16,
+  },
+  allHomeLawFirmsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  allHomeLawFirmsSubtitle: {
+    fontSize: 16,
+    color: '#6c757d',
+    lineHeight: 22,
+  },
+  allHomeLawFirmsGrid: {
+    paddingHorizontal: 16,
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  allHomeLawFirmCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    padding: 20,
+    marginBottom: 16,
+    width: '47%',
+    minHeight: 200,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+    alignItems: 'center',
+  },
+  allHomeLawFirmImageContainer: {
+    width: 70,
+    height: 70,
+    borderRadius: 35,
+    overflow: 'hidden',
+    marginBottom: 12,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  allHomeLawFirmImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  allHomeLawFirmInfo: {
+    alignItems: 'center',
+    width: '100%',
+  },
+  allHomeLawFirmName: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginBottom: 4,
+    lineHeight: 20,
+  },
+  allHomeLawFirmSpecialty: {
+    fontSize: 13,
+    color: '#6c757d',
+    textAlign: 'center',
+    marginBottom: 12,
+    lineHeight: 18,
+  },
+  allHomeLawFirmStats: {
+    flexDirection: 'column',
+    alignItems: 'center',
+    width: '100%',
+    gap: 8,
+  },
+  allHomeLawFirmStat: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  allHomeLawFirmStatText: {
+    fontSize: 12,
+    color: '#6c757d',
+    fontWeight: '500',
+    marginLeft: 4,
+    textAlign: 'center',
+  },
+  allHomeLawFirmsBottomSpacing: {
+    height: 40,
   },
 });
