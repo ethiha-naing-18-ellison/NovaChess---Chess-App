@@ -11,6 +11,9 @@ import {
   Entypo
 } from '@expo/vector-icons';
 
+// Import separate account systems
+import LawyerApp from './LawyerApp';
+
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
   const [onboardingIndex, setOnboardingIndex] = useState(0);
@@ -26,6 +29,7 @@ export default function App() {
     website: '',
     description: ''
   });
+  const [registeredLawyers, setRegisteredLawyers] = useState([]);
   const [showAllCategories, setShowAllCategories] = useState(false);
   const [showAllLawyers, setShowAllLawyers] = useState(false);
   const [showSeeAllCategoriesSelection, setShowSeeAllCategoriesSelection] = useState(false);
@@ -697,24 +701,45 @@ export default function App() {
     const currentPopularItems = userRole === 'USER' ? popularCategories : popularServices;
 
 
+  const addLawyerToDirectory = () => {
+    const lawyerData = {
+      name: `${registerForm.firstName} ${registerForm.lastName}`.trim() || 'New Lawyer',
+      specialty: selectedServices.length > 0 ? selectedServices[0] : 'Legal Professional',
+      rating: '5.0',
+      avatar: null,
+      profileImage: userProfile.profilePicture || require('./assets/images/lawyer/lawyer1.png'),
+      phone: registerForm.phone || userProfile.phone,
+      email: registerForm.email || userProfile.email,
+      services: selectedServices,
+      isNewRegistration: true
+    };
+
+    setRegisteredLawyers(prev => [lawyerData, ...prev]);
+    };
+
     const handleProceed = () => {
-      const selectedItems = userRole === 'USER' ? selectedCategories : selectedServices;
-      const itemType = userRole === 'USER' ? 'categories' : 'services';
-      
-      if (selectedItems.length === 0) {
+    const selectedItems = userRole === 'USER' ? selectedCategories : selectedServices;
+    const itemType = userRole === 'USER' ? 'categories' : 'services';
+    
+    if (selectedItems.length === 0) {
         showCustomAlert(
           'warning',
-          `No ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected`,
-          `Please select at least one ${itemType.slice(0, -1)} to ${userRole === 'USER' ? 'get personalized lawyer recommendations' : 'connect with potential clients'}.`,
+        `No ${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected`,
+        `Please select at least one ${itemType.slice(0, -1)} to ${userRole === 'USER' ? 'get personalized lawyer recommendations' : 'connect with potential clients'}.`,
           [{ text: 'OK', style: 'primary' }]
         );
         return;
       }
 
+    // If user is registering as a lawyer, add them to the directory
+    if (userRole === 'LAWYER') {
+      addLawyerToDirectory();
+      }
+
       showCustomAlert(
         'success',
-        `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected!`,
-        `Great! You've selected ${selectedItems.length} ${itemType}. ${userRole === 'USER' ? "We'll show you the best lawyers for your needs." : "You can now connect with potential clients."}`,
+      `${itemType.charAt(0).toUpperCase() + itemType.slice(1)} Selected!`,
+      `Great! You've selected ${selectedItems.length} ${itemType}. ${userRole === 'USER' ? "We'll show you the best lawyers for your needs." : userRole === 'LAWYER' ? "You are now registered as a lawyer and will appear in the directory." : "You can now connect with potential clients."}`,
         [
           {
             text: 'Continue',
@@ -763,13 +788,13 @@ export default function App() {
                         size={16} 
                         color={isSelected ? '#ffffff' : '#2E4A6B'} 
                       />
-                    </View>
-                <Text style={[
-                      styles.categorySliderText,
-                      isSelected && styles.activeCategorySliderText
-                ]}>
+              </View>
+              <Text style={[
+                styles.categorySliderText,
+                isSelected && styles.activeCategorySliderText
+              ]}>
                       {item.name}
-                </Text>
+              </Text>
             </TouchableOpacity>
           );
         })}
@@ -3219,9 +3244,11 @@ export default function App() {
             style={styles.lawyersScroll}
           >
             {homeSliderMode === 'lawyers' ? (
-              // Lawyers Data
+              // Combine registered lawyers with default lawyers
               [
-              { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer1.png') },
+                ...registeredLawyers, // Registered lawyers appear first
+                // Default lawyers
+                { name: 'Krisy Yolker', specialty: 'Property Law', rating: '4.9', avatar: null, profileImage: require('./assets/images/lawyer/lawyer1.png') },
               { name: 'Chris Young', specialty: 'Criminal Law', rating: '4.7', avatar: null, profileImage: require('./assets/images/lawyer/lawyer2.png') },
               { name: 'Lisa Wales', specialty: 'Tax Law', rating: '4.8', avatar: null, profileImage: require('./assets/images/lawyer/lawyer3.png') },
               { name: 'John Smith', specialty: 'Civil Law', rating: '4.6', avatar: null, profileImage: require('./assets/images/lawyer/lawyer4.png') },
@@ -6067,6 +6094,33 @@ export default function App() {
   };
 
   const getCurrentScreen = () => {
+    // Handle different account types
+    if (currentScreen === 'home') {
+      switch (userRole) {
+        case 'USER':
+          return renderHomeScreen(); // Normal user home (existing)
+        case 'LAWYER':
+          return (
+            <LawyerApp 
+              userRole={userRole}
+              setCurrentScreen={setCurrentScreen}
+              selectedServices={selectedServices}
+              setSelectedServices={setSelectedServices}
+              showCustomAlert={showCustomAlert}
+              ProfessionalIcon={ProfessionalIcon}
+              registerForm={registerForm}
+              userProfile={userProfile}
+            />
+          );
+        case 'LAW_FIRM':
+          // TODO: Create LawFirmApp component similar to LawyerApp
+          return renderHomeScreen(); // Temporary - will be replaced with LawFirmApp
+        default:
+          return renderHomeScreen();
+      }
+    }
+
+    // Handle other screens normally
   switch (currentScreen) {
     case 'splash':
       return renderSplashScreen();
@@ -6076,10 +6130,8 @@ export default function App() {
       return renderLoginScreen();
     case 'categories':
       return renderCategoriesScreen();
-    case 'lawFirmRegistration':
-      return renderLawFirmRegistrationScreen();
-    case 'home':
-      return renderHomeScreen();
+      case 'lawFirmRegistration':
+        return renderLawFirmRegistrationScreen();
     default:
       return renderSplashScreen();
   }
@@ -10163,7 +10215,7 @@ const styles = StyleSheet.create({
   lawFirmProceedTextDisabled: {
     color: '#6c757d',
   },
-
+  
   // See All Categories Selection Screen Styles
   seeAllCategoriesContainer: {
     flex: 1,
