@@ -169,6 +169,48 @@ const LawfirmApp = ({
     }
   ]);
   
+  // Notification states
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
+  const [notifications, setNotifications] = useState([
+    {
+      id: '1',
+      type: 'appointment',
+      title: 'New Appointment Request',
+      message: 'Sarah Johnson has requested an appointment for Contract Review',
+      time: '2 hours ago',
+      read: false,
+      data: { appointmentId: 'apt_001', clientName: 'Sarah Johnson' }
+    },
+    {
+      id: '2',
+      type: 'lawyer_request',
+      title: 'New Lawyer Application',
+      message: 'Jennifer Martinez has applied to join your law firm',
+      time: '1 day ago',
+      read: false,
+      data: { requestId: '1', lawyerName: 'Jennifer Martinez' }
+    },
+    {
+      id: '3',
+      type: 'case_update',
+      title: 'Case Status Updated',
+      message: 'Johnson vs. Smith case has been updated to 85% complete',
+      time: '2 days ago',
+      read: true,
+      data: { caseId: 'case_001', caseTitle: 'Johnson vs. Smith' }
+    },
+    {
+      id: '4',
+      type: 'appointment',
+      title: 'Appointment Confirmed',
+      message: 'Your appointment with Michael Davis has been confirmed for tomorrow',
+      time: '3 days ago',
+      read: true,
+      data: { appointmentId: 'apt_002', clientName: 'Michael Davis' }
+    }
+  ]);
+  
   const [newActivity, setNewActivity] = useState({
     type: 'note',
     title: '',
@@ -1170,12 +1212,27 @@ const LawfirmApp = ({
               <Text style={styles.homeHeaderWelcome}>Dashboard Overview</Text>
           </View>
         </View>
-        <TouchableOpacity 
-            style={styles.homeHeaderSettingsButton}
-          onPress={() => setShowManageProfile(true)}
-        >
+        <View style={styles.homeHeaderActions}>
+          <TouchableOpacity 
+            style={styles.homeHeaderActionButton}
+            onPress={() => setShowNotifications(true)}
+          >
+            <MaterialIcons name="notifications" size={24} color="#ffffff" />
+            {notifications.filter(n => !n.read).length > 0 && (
+              <View style={styles.notificationBadge}>
+                <Text style={styles.notificationBadgeText}>
+                  {notifications.filter(n => !n.read).length}
+                </Text>
+              </View>
+            )}
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={styles.homeHeaderActionButton}
+            onPress={() => setShowSettings(true)}
+          >
             <MaterialIcons name="settings" size={24} color="#ffffff" />
-        </TouchableOpacity>
+          </TouchableOpacity>
+        </View>
         </View>
       </View>
 
@@ -2278,6 +2335,25 @@ const LawfirmApp = ({
           </TouchableOpacity>
           <Text style={styles.appointmentsTitle}>Appointments</Text>
           <View style={styles.appointmentsHeaderActions}>
+            <TouchableOpacity 
+              style={styles.appointmentsActionButton}
+              onPress={() => setShowNotifications(true)}
+            >
+              <MaterialIcons name="notifications" size={24} color="#ffffff" />
+              {notifications.filter(n => !n.read).length > 0 && (
+                <View style={styles.notificationBadge}>
+                  <Text style={styles.notificationBadgeText}>
+                    {notifications.filter(n => !n.read).length}
+                  </Text>
+                </View>
+              )}
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={styles.appointmentsActionButton}
+              onPress={() => setShowSettings(true)}
+            >
+              <MaterialIcons name="settings" size={24} color="#ffffff" />
+            </TouchableOpacity>
             <View style={styles.appointmentsBadge}>
               <Text style={styles.appointmentsBadgeText}>{pendingAppointments.length}</Text>
             </View>
@@ -3010,16 +3086,23 @@ const LawfirmApp = ({
             <View style={styles.headerButtonsRow}>
               <TouchableOpacity 
                 style={styles.headerNotificationButton}
-                onPress={() => {}}
+                onPress={() => setShowNotifications(true)}
               >
                 <MaterialIcons name="notifications" size={20} color="#ffffff" />
-                <View style={styles.notificationBadge}>
-                  <Text style={styles.notificationCount}>2</Text>
-                </View>
+                {notifications.filter(n => !n.read).length > 0 && (
+                  <View style={styles.notificationBadge}>
+                    <Text style={styles.notificationBadgeText}>
+                      {notifications.filter(n => !n.read).length}
+                    </Text>
+                  </View>
+                )}
               </TouchableOpacity>
-              <TouchableOpacity style={styles.lawfirmProfileSettingsButton}>
+              <TouchableOpacity 
+                style={styles.lawfirmProfileSettingsButton}
+                onPress={() => setShowSettings(true)}
+              >
                 <MaterialIcons name="settings" size={24} color="#ffffff" />
-        </TouchableOpacity>
+              </TouchableOpacity>
             </View>
           </View>
       </View>
@@ -5298,9 +5381,210 @@ const LawfirmApp = ({
     </View>
   );
 
+  // Helper functions for notifications
+  const getNotificationIconName = (type) => {
+    switch (type) {
+      case 'appointment':
+        return 'event';
+      case 'lawyer_request':
+        return 'person-add';
+      case 'case_update':
+        return 'folder';
+      default:
+        return 'notifications';
+    }
+  };
+
+  const getNotificationIconColor = (type) => {
+    switch (type) {
+      case 'appointment':
+        return '#4CAF50';
+      case 'lawyer_request':
+        return '#2E4A6B';
+      case 'case_update':
+        return '#FF9800';
+      default:
+        return '#666';
+    }
+  };
+
+  const handleNotificationClick = (notification) => {
+    // Mark as read
+    const updatedNotifications = notifications.map(n => 
+      n.id === notification.id ? { ...n, read: true } : n
+    );
+    setNotifications(updatedNotifications);
+    
+    // Navigate to related screen
+    setShowNotifications(false);
+    
+    switch (notification.type) {
+      case 'appointment':
+        setShowAppointments(true);
+        setLawfirmCurrentScreen('appointments');
+        break;
+      case 'lawyer_request':
+        setLawyerPageTab('requests');
+        setShowLawyerRoster(true);
+        setLawfirmCurrentScreen('lawyers');
+        break;
+      case 'case_update':
+        setShowCaseManagement(true);
+        setLawfirmCurrentScreen('cases');
+        break;
+      default:
+        break;
+    }
+  };
+
+  // Notifications Screen
+  const renderNotificationsScreen = () => (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
+      <View style={styles.notificationsHeader}>
+        <TouchableOpacity 
+          onPress={() => setShowNotifications(false)}
+          style={styles.notificationsBackButton}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.notificationsTitle}>Notifications</Text>
+        <TouchableOpacity 
+          onPress={() => {
+            const updatedNotifications = notifications.map(n => ({ ...n, read: true }));
+            setNotifications(updatedNotifications);
+          }}
+          style={styles.notificationsMarkAllButton}
+        >
+          <Text style={styles.notificationsMarkAllText}>Mark All Read</Text>
+        </TouchableOpacity>
+      </View>
+
+      <ScrollView style={styles.notificationsContent}>
+        {notifications.length === 0 ? (
+          <View style={styles.emptyNotifications}>
+            <MaterialIcons name="notifications-none" size={64} color="#ccc" />
+            <Text style={styles.emptyNotificationsTitle}>No Notifications</Text>
+            <Text style={styles.emptyNotificationsSubtitle}>
+              You'll see notifications about appointments and lawyer requests here
+            </Text>
+          </View>
+        ) : (
+          notifications.map((notification, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[
+                styles.notificationCard,
+                !notification.read && styles.notificationCardUnread
+              ]}
+              onPress={() => handleNotificationClick(notification)}
+            >
+              <View style={styles.notificationCardHeader}>
+                <View style={[
+                  styles.notificationIcon,
+                  { backgroundColor: getNotificationIconColor(notification.type) }
+                ]}>
+                  <MaterialIcons 
+                    name={getNotificationIconName(notification.type)} 
+                    size={20} 
+                    color="#ffffff" 
+                  />
+                </View>
+                <View style={styles.notificationContent}>
+                  <Text style={styles.notificationTitle}>{notification.title}</Text>
+                  <Text style={styles.notificationMessage}>{notification.message}</Text>
+                  <Text style={styles.notificationTime}>{notification.time}</Text>
+                </View>
+                {!notification.read && (
+                  <View style={styles.notificationUnreadDot} />
+                )}
+              </View>
+            </TouchableOpacity>
+          ))
+        )}
+      </ScrollView>
+    </View>
+  );
+
+  // Settings Screen
+  const renderSettingsScreen = () => (
+    <View style={styles.container}>
+      <StatusBar style="light" />
+      
+      <View style={styles.settingsHeader}>
+        <TouchableOpacity 
+          onPress={() => setShowSettings(false)}
+          style={styles.settingsBackButton}
+        >
+          <MaterialIcons name="arrow-back" size={24} color="#ffffff" />
+        </TouchableOpacity>
+        <Text style={styles.settingsTitle}>Settings</Text>
+        <View style={styles.settingsPlaceholder} />
+      </View>
+
+      <ScrollView style={styles.settingsContent}>
+        <View style={styles.settingsSection}>
+          <Text style={styles.settingsSectionTitle}>General</Text>
+          
+          <TouchableOpacity style={styles.settingsItem}>
+            <MaterialIcons name="person" size={24} color="#2E4A6B" />
+            <View style={styles.settingsItemContent}>
+              <Text style={styles.settingsItemTitle}>Account Settings</Text>
+              <Text style={styles.settingsItemSubtitle}>Manage your account information</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingsItem}>
+            <MaterialIcons name="notifications" size={24} color="#2E4A6B" />
+            <View style={styles.settingsItemContent}>
+              <Text style={styles.settingsItemTitle}>Notification Preferences</Text>
+              <Text style={styles.settingsItemSubtitle}>Configure your notification settings</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingsItem}>
+            <MaterialIcons name="security" size={24} color="#2E4A6B" />
+            <View style={styles.settingsItemContent}>
+              <Text style={styles.settingsItemTitle}>Privacy & Security</Text>
+              <Text style={styles.settingsItemSubtitle}>Manage privacy and security options</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+        </View>
+
+        <View style={styles.settingsSection}>
+          <Text style={styles.settingsSectionTitle}>Support</Text>
+          
+          <TouchableOpacity style={styles.settingsItem}>
+            <MaterialIcons name="help" size={24} color="#2E4A6B" />
+            <View style={styles.settingsItemContent}>
+              <Text style={styles.settingsItemTitle}>Help & Support</Text>
+              <Text style={styles.settingsItemSubtitle}>Get help and contact support</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+
+          <TouchableOpacity style={styles.settingsItem}>
+            <MaterialIcons name="info" size={24} color="#2E4A6B" />
+            <View style={styles.settingsItemContent}>
+              <Text style={styles.settingsItemTitle}>About</Text>
+              <Text style={styles.settingsItemSubtitle}>App version and information</Text>
+            </View>
+            <MaterialIcons name="chevron-right" size={24} color="#ccc" />
+          </TouchableOpacity>
+        </View>
+      </ScrollView>
+    </View>
+  );
+
   // Main screen router for Law Firm App
   const renderCurrentLawfirmScreen = () => {
     // Handle overlay screens first
+    if (showNotifications) return renderNotificationsScreen();
+    if (showSettings) return renderSettingsScreen();
     if (showLogoutConfirmation) return renderLogoutConfirmationScreen();
     if (showManageProfile) return renderManageProfileScreen();
     if (showRemoveLawyerConfirmation) return renderRemoveLawyerConfirmationScreen();
@@ -10014,6 +10298,218 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#ffffff',
     marginLeft: 6,
+  },
+
+  // Header Action Styles
+  homeHeaderActions: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  homeHeaderActionButton: {
+    padding: 8,
+    marginLeft: 8,
+    position: 'relative',
+  },
+  appointmentsActionButton: {
+    padding: 8,
+    marginRight: 8,
+    position: 'relative',
+  },
+  notificationBadge: {
+    position: 'absolute',
+    top: 2,
+    right: 2,
+    backgroundColor: '#dc3545',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  notificationBadgeText: {
+    color: '#ffffff',
+    fontSize: 11,
+    fontWeight: 'bold',
+  },
+
+  // Notifications Screen Styles
+  notificationsHeader: {
+    backgroundColor: '#2E4A6B',
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  notificationsBackButton: {
+    padding: 8,
+  },
+  notificationsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+    textAlign: 'center',
+  },
+  notificationsMarkAllButton: {
+    padding: 8,
+  },
+  notificationsMarkAllText: {
+    color: '#ffffff',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  notificationsContent: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  emptyNotifications: {
+    flex: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+    paddingVertical: 100,
+    paddingHorizontal: 40,
+  },
+  emptyNotificationsTitle: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#333',
+    marginTop: 20,
+    marginBottom: 10,
+  },
+  emptyNotificationsSubtitle: {
+    fontSize: 16,
+    color: '#666',
+    textAlign: 'center',
+    lineHeight: 24,
+  },
+  notificationCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginVertical: 8,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  notificationCardUnread: {
+    borderLeftWidth: 4,
+    borderLeftColor: '#2E4A6B',
+  },
+  notificationCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+  },
+  notificationIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 16,
+  },
+  notificationContent: {
+    flex: 1,
+  },
+  notificationTitle: {
+    fontSize: 16,
+    fontWeight: 'bold',
+    color: '#333',
+    marginBottom: 4,
+  },
+  notificationMessage: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
+    marginBottom: 8,
+  },
+  notificationTime: {
+    fontSize: 12,
+    color: '#999',
+  },
+  notificationUnreadDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    backgroundColor: '#2E4A6B',
+    marginLeft: 12,
+    marginTop: 4,
+  },
+
+  // Settings Screen Styles
+  settingsHeader: {
+    backgroundColor: '#2E4A6B',
+    paddingTop: 50,
+    paddingBottom: 20,
+    paddingHorizontal: 20,
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  settingsBackButton: {
+    padding: 8,
+  },
+  settingsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    flex: 1,
+    textAlign: 'center',
+  },
+  settingsPlaceholder: {
+    width: 40,
+  },
+  settingsContent: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  settingsSection: {
+    backgroundColor: '#ffffff',
+    marginTop: 20,
+    marginHorizontal: 20,
+    borderRadius: 16,
+    padding: 4,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+  },
+  settingsSectionTitle: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 16,
+    marginHorizontal: 16,
+    marginTop: 16,
+  },
+  settingsItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 16,
+    paddingHorizontal: 16,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  settingsItemContent: {
+    flex: 1,
+    marginLeft: 16,
+  },
+  settingsItemTitle: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 4,
+  },
+  settingsItemSubtitle: {
+    fontSize: 14,
+    color: '#666',
+    lineHeight: 20,
   },
 });
 
