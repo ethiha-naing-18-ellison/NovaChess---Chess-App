@@ -1213,7 +1213,7 @@ const LawfirmApp = ({
           </View>
         </View>
         <View style={styles.homeHeaderActions}>
-          <TouchableOpacity 
+        <TouchableOpacity 
             style={styles.homeHeaderActionButton}
             onPress={() => setShowNotifications(true)}
           >
@@ -1229,9 +1229,9 @@ const LawfirmApp = ({
           <TouchableOpacity 
             style={styles.homeHeaderActionButton}
             onPress={() => setShowSettings(true)}
-          >
+        >
             <MaterialIcons name="settings" size={24} color="#ffffff" />
-          </TouchableOpacity>
+        </TouchableOpacity>
         </View>
         </View>
       </View>
@@ -1245,7 +1245,7 @@ const LawfirmApp = ({
           <View style={styles.homeStatsGrid}>
             <View style={[styles.homeStatCard, styles.homeStatCardPrimary]}>
               <View style={styles.homeStatIconContainer}>
-                <MaterialIcons name="people" size={28} color="#ffffff" />
+                <MaterialIcons name="people" size={22} color="#2E4A6B" />
             </View>
               <View style={styles.homeStatContent}>
                 <Text style={styles.homeStatNumber}>{lawfirmStats.totalLawyers}</Text>
@@ -1255,7 +1255,7 @@ const LawfirmApp = ({
             
             <View style={[styles.homeStatCard, styles.homeStatCardSecondary]}>
               <View style={styles.homeStatIconContainer}>
-                <MaterialIcons name="folder" size={28} color="#ffffff" />
+                <MaterialIcons name="folder" size={22} color="#2E4A6B" />
             </View>
               <View style={styles.homeStatContent}>
                 <Text style={styles.homeStatNumber}>{lawfirmStats.activeCases}</Text>
@@ -1265,7 +1265,7 @@ const LawfirmApp = ({
 
             <View style={[styles.homeStatCard, styles.homeStatCardAccent]}>
               <View style={styles.homeStatIconContainer}>
-                <MaterialIcons name="group" size={28} color="#ffffff" />
+                <MaterialIcons name="group" size={22} color="#2E4A6B" />
               </View>
               <View style={styles.homeStatContent}>
                 <Text style={styles.homeStatNumber}>{firmClients.length}</Text>
@@ -1275,7 +1275,7 @@ const LawfirmApp = ({
             
             <View style={[styles.homeStatCard, styles.homeStatCardSuccess]}>
               <View style={styles.homeStatIconContainer}>
-                <MaterialIcons name="attach-money" size={28} color="#ffffff" />
+                <MaterialIcons name="attach-money" size={22} color="#2E4A6B" />
               </View>
               <View style={styles.homeStatContent}>
                 <Text style={styles.homeStatNumber}>{lawfirmStats.monthlyRevenue}</Text>
@@ -1469,10 +1469,54 @@ const LawfirmApp = ({
               onPress={() => handleCaseSelect(caseItem)}
             >
               <View style={styles.homeCaseCardHeader}>
-                <Image source={caseItem.clientImage} style={styles.homeCaseClientImage} />
+                <TouchableOpacity
+                  onPress={(e) => {
+                    e.stopPropagation(); // Prevent case selection
+                    // Create client object from case data
+                    const clientFromCase = {
+                      id: caseItem.id + '_client',
+                      name: caseItem.clientName,
+                      type: 'Individual', // Default, could be enhanced
+                      contactPerson: caseItem.clientName,
+                      phone: caseItem.clientPhone,
+                      email: caseItem.clientEmail,
+                      address: 'Address not provided',
+                      totalCases: 1, // Could be calculated
+                      totalValue: caseItem.caseValue || '$0',
+                      status: 'Active',
+                      image: caseItem.clientImage
+                    };
+                    setSelectedClient(clientFromCase);
+                    setShowClientDetails(true);
+                  }}
+                >
+                  <Image source={caseItem.clientImage} style={styles.homeCaseClientImage} />
+                </TouchableOpacity>
                 <View style={styles.homeCaseHeaderInfo}>
                   <Text style={styles.homeCaseTitle}>{caseItem.caseNumber} - {caseItem.caseType}</Text>
-                  <Text style={styles.homeCaseClient}>Client: {caseItem.clientName}</Text>
+                  <TouchableOpacity
+                    onPress={(e) => {
+                      e.stopPropagation(); // Prevent case selection
+                      // Create client object from case data
+                      const clientFromCase = {
+                        id: caseItem.id + '_client',
+                        name: caseItem.clientName,
+                        type: 'Individual', // Default, could be enhanced
+                        contactPerson: caseItem.clientName,
+                        phone: caseItem.clientPhone,
+                        email: caseItem.clientEmail,
+                        address: 'Address not provided',
+                        totalCases: 1, // Could be calculated
+                        totalValue: caseItem.caseValue || '$0',
+                        status: 'Active',
+                        image: caseItem.clientImage
+                      };
+                      setSelectedClient(clientFromCase);
+                      setShowClientDetails(true);
+                    }}
+                  >
+                    <Text style={styles.homeCaseClient}>Client: {caseItem.clientName}</Text>
+                  </TouchableOpacity>
                 </View>
                 <View style={[
                   styles.homeCaseStatusBadge, 
@@ -1522,8 +1566,8 @@ const LawfirmApp = ({
             setShowLawyerRoster(true);
           }}
         >
-          <MaterialIcons name="people" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
-          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Lawyers</Text>
+          <MaterialIcons name="settings" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
+          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Management</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -1571,7 +1615,7 @@ const LawfirmApp = ({
         }}>
           <MaterialIcons name="arrow-back" size={24} color="#2E4A6B" />
         </TouchableOpacity>
-        <Text style={styles.screenTitle}>Lawyers</Text>
+        <Text style={styles.screenTitle}>Management</Text>
         <TouchableOpacity onPress={() => setShowChooseLawyer(true)}>
           <MaterialIcons name="add" size={24} color="#2E4A6B" />
         </TouchableOpacity>
@@ -1579,7 +1623,7 @@ const LawfirmApp = ({
 
       {/* Tab Navigation */}
       <View style={styles.lawyerTabContainer}>
-        <TouchableOpacity
+              <TouchableOpacity 
           style={[
             styles.lawyerTab,
             lawyerPageTab === 'roster' && styles.lawyerTabActive
@@ -1593,8 +1637,8 @@ const LawfirmApp = ({
             Lawyer Roster
           </Text>
           {lawyerPageTab === 'roster' && <View style={styles.lawyerTabIndicator} />}
-        </TouchableOpacity>
-        <TouchableOpacity
+              </TouchableOpacity>
+              <TouchableOpacity 
           style={[
             styles.lawyerTab,
             lawyerPageTab === 'requests' && styles.lawyerTabActive
@@ -1608,16 +1652,34 @@ const LawfirmApp = ({
             Lawyer Requests
           </Text>
           {lawyerRequests.length > 0 && (
-            <View style={styles.lawyerRequestBadge}>
+            <View style={styles.lawyerRequestBadgeCorner}>
               <Text style={styles.lawyerRequestBadgeText}>{lawyerRequests.length}</Text>
             </View>
           )}
           {lawyerPageTab === 'requests' && <View style={styles.lawyerTabIndicator} />}
         </TouchableOpacity>
+
+        <TouchableOpacity 
+          style={[
+            styles.lawyerTab,
+            lawyerPageTab === 'clients' && styles.lawyerTabActive
+          ]}
+          onPress={() => setLawyerPageTab('clients')}
+        >
+          <Text style={[
+            styles.lawyerTabText,
+            lawyerPageTab === 'clients' && styles.lawyerTabTextActive
+          ]}>
+            Client Roster
+          </Text>
+          {lawyerPageTab === 'clients' && <View style={styles.lawyerTabIndicator} />}
+        </TouchableOpacity>
       </View>
 
       {/* Tab Content */}
-      {lawyerPageTab === 'roster' ? renderLawyerRosterContent() : renderLawyerRequestsContent()}
+      {lawyerPageTab === 'roster' ? renderLawyerRosterContent() : 
+       lawyerPageTab === 'requests' ? renderLawyerRequestsContent() : 
+       renderClientRosterContent()}
 
       {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
@@ -1636,8 +1698,8 @@ const LawfirmApp = ({
           style={[styles.navItem, lawfirmCurrentScreen === 'lawyers' && styles.activeNavItem]}
           onPress={() => setLawfirmCurrentScreen('lawyers')}
         >
-          <MaterialIcons name="people" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
-          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Lawyers</Text>
+          <MaterialIcons name="settings" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
+          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Management</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -1812,6 +1874,255 @@ const LawfirmApp = ({
       )}
     </ScrollView>
   );
+
+  const renderClientRosterContent = () => (
+    <ScrollView style={[styles.content, styles.tabContent]}>
+      {firmClients.length === 0 ? (
+        <View style={styles.emptyLawyerRoster}>
+          <MaterialIcons name="people-outline" size={64} color="#ccc" />
+          <Text style={styles.emptyLawyerRosterTitle}>No Clients Yet</Text>
+          <Text style={styles.emptyLawyerRosterSubtitle}>
+            Your firm's clients will appear here once they are added
+          </Text>
+        </View>
+      ) : (
+        firmClients.map((client, index) => (
+          <View key={index} style={styles.clientCard}>
+            <View style={styles.clientCardHeader}>
+              <View style={styles.clientImageContainer}>
+                <Image source={client.image} style={styles.clientImage} />
+              </View>
+              <View style={styles.clientInfo}>
+                <View style={styles.clientNameRow}>
+                  <Text style={styles.clientName}>{client.name}</Text>
+                  <View style={[styles.clientStatusBadge, 
+                    client.status === 'Active' ? styles.clientStatusActive : styles.clientStatusInactive
+                  ]}>
+                    <Text style={[styles.clientStatusText,
+                      client.status === 'Active' ? styles.clientStatusTextActive : styles.clientStatusTextInactive
+                    ]}>
+                      {client.status}
+                    </Text>
+                  </View>
+                </View>
+                <Text style={styles.clientType}>{client.type} Client</Text>
+                <Text style={styles.clientContact}>{client.contactPerson}</Text>
+              </View>
+            </View>
+
+            <View style={styles.clientDetails}>
+              <View style={styles.clientDetailRow}>
+                <MaterialIcons name="phone" size={16} color="#666" />
+                <Text style={styles.clientDetailText}>{client.phone}</Text>
+              </View>
+              <View style={styles.clientDetailRow}>
+                <MaterialIcons name="email" size={16} color="#666" />
+                <Text style={styles.clientDetailText}>{client.email}</Text>
+              </View>
+              <View style={styles.clientDetailRow}>
+                <MaterialIcons name="location-on" size={16} color="#666" />
+                <Text style={styles.clientDetailText}>{client.address}</Text>
+              </View>
+            </View>
+
+            <View style={styles.clientStats}>
+              <View style={styles.clientStatItem}>
+                <Text style={styles.clientStatNumber}>{client.totalCases}</Text>
+                <Text style={styles.clientStatLabel}>Cases</Text>
+              </View>
+              <View style={styles.clientStatItem}>
+                <Text style={styles.clientStatNumber}>{client.totalValue}</Text>
+                <Text style={styles.clientStatLabel}>Total Value</Text>
+              </View>
+              <TouchableOpacity 
+                style={styles.clientViewButton}
+                onPress={() => {
+                  setSelectedClient(client);
+                  setShowClientDetails(true);
+                }}
+              >
+                <MaterialIcons name="visibility" size={20} color="#2E4A6B" />
+                <Text style={styles.clientViewButtonText}>View Details</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        ))
+      )}
+    </ScrollView>
+  );
+
+  // Client Details Screen (similar to User Details in LawyerApp.js)
+  const renderClientDetailsScreen = () => {
+    if (!selectedClient) return null;
+
+    return (
+      <View style={styles.clientDetailsContainer}>
+        <StatusBar style="light" />
+        
+        {/* Header */}
+        <View style={styles.clientDetailsHeader}>
+          <TouchableOpacity 
+            style={styles.clientDetailsBackButton}
+            onPress={() => setShowClientDetails(false)}
+          >
+            <MaterialIcons name="arrow-back" size={24} color="#ffffff" />
+          </TouchableOpacity>
+          <Text style={styles.clientDetailsTitle}>Client Profile</Text>
+          <View style={styles.clientDetailsPlaceholder} />
+        </View>
+
+        <ScrollView style={styles.clientDetailsScrollContent} showsVerticalScrollIndicator={false}>
+          {/* Client Hero Section */}
+          <View style={styles.clientDetailsHeroSection}>
+            <View style={styles.clientDetailsHeroBackground}>
+              <View style={styles.clientDetailsHeroOverlay} />
+              <View style={styles.clientDetailsHeroContent}>
+                <View style={styles.clientDetailsHeroInfo}>
+                  <View style={styles.clientDetailsImageContainer}>
+                    <Image source={selectedClient.image} style={styles.clientDetailsHeroImage} />
+                  </View>
+                  <Text style={styles.clientDetailsHeroTitle}>{selectedClient.name}</Text>
+                  <Text style={styles.clientDetailsHeroSubtitle}>{selectedClient.type} Client</Text>
+                  <View style={styles.clientDetailsStatsRow}>
+                    <View style={styles.clientDetailsStat}>
+                      <Text style={styles.clientDetailsStatNumber}>{selectedClient.totalCases}</Text>
+                      <Text style={styles.clientDetailsStatLabel}>Cases</Text>
+                    </View>
+                    <View style={styles.clientDetailsStatDivider} />
+                    <View style={styles.clientDetailsStat}>
+                      <Text style={styles.clientDetailsStatNumber}>{selectedClient.totalValue}</Text>
+                      <Text style={styles.clientDetailsStatLabel}>Total Value</Text>
+                    </View>
+                    <View style={styles.clientDetailsStatDivider} />
+                    <View style={styles.clientDetailsStat}>
+                      <Text style={styles.clientDetailsStatNumber}>{selectedClient.status}</Text>
+                      <Text style={styles.clientDetailsStatLabel}>Status</Text>
+                    </View>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Contact Information */}
+          <View style={styles.clientDetailsContactCard}>
+            <View style={styles.clientDetailsContactHeader}>
+              <View style={styles.clientDetailsContactIcon}>
+                <MaterialIcons name="phone" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.clientDetailsContactTitle}>Contact Information</Text>
+            </View>
+            <View style={styles.clientDetailsContactInfo}>
+              <View style={styles.clientDetailsContactItem}>
+                <MaterialIcons name="person" size={16} color="#6c757d" />
+                <Text style={styles.clientDetailsContactText}>{selectedClient.contactPerson}</Text>
+              </View>
+              <View style={styles.clientDetailsContactItem}>
+                <MaterialIcons name="email" size={16} color="#6c757d" />
+                <Text style={styles.clientDetailsContactText}>{selectedClient.email}</Text>
+              </View>
+              <View style={styles.clientDetailsContactItem}>
+                <MaterialIcons name="phone" size={16} color="#6c757d" />
+                <Text style={styles.clientDetailsContactText}>{selectedClient.phone}</Text>
+              </View>
+              <View style={styles.clientDetailsContactItem}>
+                <MaterialIcons name="location-on" size={16} color="#6c757d" />
+                <Text style={styles.clientDetailsContactText}>{selectedClient.address}</Text>
+              </View>
+            </View>
+          </View>
+
+          {/* Client Type & Business Info */}
+          <View style={styles.clientDetailsBusinessCard}>
+            <View style={styles.clientDetailsBusinessHeader}>
+              <View style={styles.clientDetailsBusinessIcon}>
+                <MaterialIcons name="business" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.clientDetailsBusinessTitle}>Business Information</Text>
+            </View>
+            <View style={styles.clientDetailsBusinessInfo}>
+              <View style={styles.clientDetailsBusinessItem}>
+                <Text style={styles.clientDetailsBusinessLabel}>Client Type:</Text>
+                <Text style={styles.clientDetailsBusinessValue}>{selectedClient.type}</Text>
+              </View>
+              <View style={styles.clientDetailsBusinessItem}>
+                <Text style={styles.clientDetailsBusinessLabel}>Primary Contact:</Text>
+                <Text style={styles.clientDetailsBusinessValue}>{selectedClient.contactPerson}</Text>
+              </View>
+              <View style={styles.clientDetailsBusinessItem}>
+                <Text style={styles.clientDetailsBusinessLabel}>Account Status:</Text>
+                <View style={[styles.clientDetailsStatusBadge, 
+                  selectedClient.status === 'Active' ? styles.clientDetailsStatusActive : styles.clientDetailsStatusInactive
+                ]}>
+                  <Text style={[styles.clientDetailsStatusText,
+                    selectedClient.status === 'Active' ? styles.clientDetailsStatusTextActive : styles.clientDetailsStatusTextInactive
+                  ]}>
+                    {selectedClient.status}
+                  </Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Case Summary */}
+          <View style={styles.clientDetailsCasesCard}>
+            <View style={styles.clientDetailsCasesHeader}>
+              <View style={styles.clientDetailsCasesIcon}>
+                <MaterialIcons name="folder" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.clientDetailsCasesTitle}>Case Summary</Text>
+            </View>
+            <View style={styles.clientDetailsCasesInfo}>
+              <View style={styles.clientDetailsCasesStats}>
+                <View style={styles.clientDetailsCasesStat}>
+                  <Text style={styles.clientDetailsCasesStatNumber}>{selectedClient.totalCases}</Text>
+                  <Text style={styles.clientDetailsCasesStatLabel}>Total Cases</Text>
+                </View>
+                <View style={styles.clientDetailsCasesStat}>
+                  <Text style={styles.clientDetailsCasesStatNumber}>{selectedClient.totalValue}</Text>
+                  <Text style={styles.clientDetailsCasesStatLabel}>Total Value</Text>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Quick Actions */}
+          <View style={styles.clientDetailsActionsCard}>
+            <View style={styles.clientDetailsActionsHeader}>
+              <View style={styles.clientDetailsActionsIcon}>
+                <MaterialIcons name="settings" size={24} color="#2E4A6B" />
+              </View>
+              <Text style={styles.clientDetailsActionsTitle}>Quick Actions</Text>
+            </View>
+            <View style={styles.clientDetailsActionsGrid}>
+              <TouchableOpacity style={styles.clientDetailsActionButton}>
+                <MaterialIcons name="add" size={24} color="#2E4A6B" />
+                <Text style={styles.clientDetailsActionText}>New Case</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.clientDetailsActionButton}>
+                <MaterialIcons name="event" size={24} color="#2E4A6B" />
+                <Text style={styles.clientDetailsActionText}>Schedule Meeting</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.clientDetailsActionButton}>
+                <MaterialIcons name="email" size={24} color="#2E4A6B" />
+                <Text style={styles.clientDetailsActionText}>Send Email</Text>
+              </TouchableOpacity>
+              
+              <TouchableOpacity style={styles.clientDetailsActionButton}>
+                <MaterialIcons name="receipt" size={24} color="#2E4A6B" />
+                <Text style={styles.clientDetailsActionText}>Generate Invoice</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+          
+          {/* Bottom Spacing */}
+          <View style={styles.clientDetailsBottomSpacing} />
+        </ScrollView>
+      </View>
+    );
+  };
 
   // Lawyer Detail Screen (based on App.js implementation)
   const renderLawyerDetailScreen = () => {
@@ -2588,14 +2899,34 @@ const LawfirmApp = ({
               <Text style={styles.appointmentDetailsCardTitle}>Client Information</Text>
             </View>
             
-            <View style={styles.appointmentDetailsClientInfo}>
+            <TouchableOpacity 
+              style={styles.appointmentDetailsClientInfo}
+              onPress={() => {
+                // Create client object from appointment data
+                const clientFromAppointment = {
+                  id: selectedAppointment.id + '_client',
+                  name: selectedAppointment.clientName,
+                  type: 'Individual', // Default, could be enhanced
+                  contactPerson: selectedAppointment.clientName,
+                  phone: selectedAppointment.clientPhone,
+                  email: selectedAppointment.clientEmail || 'No email provided',
+                  address: 'Address not provided',
+                  totalCases: 1, // Could be calculated
+                  totalValue: '$0', // Default
+                  status: 'Active',
+                  image: selectedAppointment.clientImage
+                };
+                setSelectedClient(clientFromAppointment);
+                setShowClientDetails(true);
+              }}
+            >
               <Image source={selectedAppointment.clientImage} style={styles.appointmentDetailsClientImage} />
               <View style={styles.appointmentDetailsClientDetails}>
                 <Text style={styles.appointmentDetailsClientName}>{selectedAppointment.clientName}</Text>
                 <Text style={styles.appointmentDetailsClientPhone}>{selectedAppointment.clientPhone}</Text>
                 <Text style={styles.appointmentDetailsClientEmail}>{selectedAppointment.clientEmail || 'No email provided'}</Text>
               </View>
-            </View>
+            </TouchableOpacity>
           </View>
 
           {/* Appointment Information Card */}
@@ -3090,11 +3421,11 @@ const LawfirmApp = ({
               >
                 <MaterialIcons name="notifications" size={20} color="#ffffff" />
                 {notifications.filter(n => !n.read).length > 0 && (
-                  <View style={styles.notificationBadge}>
+                <View style={styles.notificationBadge}>
                     <Text style={styles.notificationBadgeText}>
                       {notifications.filter(n => !n.read).length}
                     </Text>
-                  </View>
+                </View>
                 )}
               </TouchableOpacity>
               <TouchableOpacity 
@@ -3102,7 +3433,7 @@ const LawfirmApp = ({
                 onPress={() => setShowSettings(true)}
               >
                 <MaterialIcons name="settings" size={24} color="#ffffff" />
-              </TouchableOpacity>
+        </TouchableOpacity>
             </View>
           </View>
       </View>
@@ -3154,7 +3485,10 @@ const LawfirmApp = ({
           </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
+            <TouchableOpacity 
+              style={styles.lawfirmProfileMenuItem}
+              onPress={() => setShowFinancialReports(true)}
+            >
               <View style={styles.lawfirmProfileMenuItemLeft}>
                 <MaterialIcons name="assessment" size={24} color="#2E4A6B" />
                 <Text style={styles.lawfirmProfileMenuItemText}>Financial Reports</Text>
@@ -3779,14 +4113,34 @@ const LawfirmApp = ({
               </View>
 
               {/* Client Information */}
-              <View style={styles.lawfirmCaseClientInfo}>
+              <TouchableOpacity 
+                style={styles.lawfirmCaseClientInfo}
+                onPress={() => {
+                  // Create client object from case data
+                  const clientFromCase = {
+                    id: caseItem.id + '_client',
+                    name: caseItem.clientName,
+                    type: 'Individual', // Default, could be enhanced
+                    contactPerson: caseItem.clientName,
+                    phone: caseItem.clientPhone,
+                    email: caseItem.clientEmail,
+                    address: 'Address not provided',
+                    totalCases: 1, // Could be calculated
+                    totalValue: caseItem.caseValue || '$0',
+                    status: 'Active',
+                    image: caseItem.clientImage
+                  };
+                  setSelectedClient(clientFromCase);
+                  setShowClientDetails(true);
+                }}
+              >
                 <Image source={caseItem.clientImage} style={styles.lawfirmCaseClientImage} />
                 <View style={styles.lawfirmCaseClientDetails}>
                   <Text style={styles.lawfirmCaseClientName}>{caseItem.clientName}</Text>
                   <Text style={styles.lawfirmCaseClientEmail}>{caseItem.clientEmail}</Text>
                   <Text style={styles.lawfirmCaseClientPhone}>{caseItem.clientPhone}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
 
               {/* Case Type and Description */}
               <View style={styles.lawfirmCaseInfo}>
@@ -3968,7 +4322,27 @@ const LawfirmApp = ({
           <View style={styles.caseOverviewCard}>
             <View style={styles.caseOverviewHeader}>
               <View style={styles.caseOverviewLeft}>
-                <View style={styles.caseDetailsClientInfo}>
+                <TouchableOpacity 
+                  style={styles.caseDetailsClientInfo}
+                  onPress={() => {
+                    // Create client object from case data
+                    const clientFromCase = {
+                      id: selectedCase.id + '_client',
+                      name: selectedCase.clientName,
+                      type: 'Individual', // Default, could be enhanced
+                      contactPerson: selectedCase.clientName,
+                      phone: selectedCase.clientPhone,
+                      email: selectedCase.clientEmail,
+                      address: 'Address not provided',
+                      totalCases: 1, // Could be calculated
+                      totalValue: selectedCase.caseValue || '$0',
+                      status: 'Active',
+                      image: selectedCase.clientImage
+                    };
+                    setSelectedClient(clientFromCase);
+                    setShowClientDetails(true);
+                  }}
+                >
                   <View style={styles.caseDetailsClientAvatar}>
                     <Image source={selectedCase.clientImage} style={styles.caseDetailsClientImage} />
                   </View>
@@ -3978,7 +4352,7 @@ const LawfirmApp = ({
                     <Text style={styles.caseOverviewContact}>{selectedCase.clientEmail}</Text>
                     <Text style={styles.caseOverviewContact}>{selectedCase.clientPhone}</Text>
                   </View>
-                </View>
+                </TouchableOpacity>
               </View>
               <View style={styles.caseOverviewBadges}>
                 <View style={[styles.statusBadgeLarge, { backgroundColor: getStatusColor(selectedCase.status) }]}>
@@ -5304,21 +5678,173 @@ const LawfirmApp = ({
       <View style={styles.screenHeader}>
         <TouchableOpacity onPress={() => {
           setShowFinancialReports(false);
-          setLawfirmCurrentScreen('home');
+          setLawfirmCurrentScreen('profile');
         }}>
           <MaterialIcons name="arrow-back" size={24} color="#2E4A6B" />
         </TouchableOpacity>
-      <Text style={styles.screenTitle}>Financial Reports</Text>
+        <Text style={styles.screenTitle}>Financial Reports</Text>
         <View style={styles.placeholder} />
       </View>
 
-      <ScrollView style={styles.content}>
-        <View style={styles.placeholderContent}>
-          <MaterialIcons name="assessment" size={80} color="#2E4A6B" />
-          <Text style={styles.placeholderTitle}>Financial Reports</Text>
-          <Text style={styles.placeholderText}>
-            View comprehensive financial reports, revenue tracking, and billing summaries for your law firm.
-          </Text>
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        {/* Financial Overview Cards */}
+        <View style={styles.financialOverviewSection}>
+          <Text style={styles.sectionTitle}>Financial Overview</Text>
+          <View style={styles.financialStatsGrid}>
+            <View style={styles.financialStatCard}>
+              <MaterialIcons name="trending-up" size={24} color="#4CAF50" />
+              <Text style={styles.financialStatNumber}>$45,280</Text>
+              <Text style={styles.financialStatLabel}>Total Revenue</Text>
+              <Text style={styles.financialStatPeriod}>This Month</Text>
+            </View>
+            
+            <View style={styles.financialStatCard}>
+              <MaterialIcons name="account-balance-wallet" size={24} color="#2E4A6B" />
+              <Text style={styles.financialStatNumber}>$38,120</Text>
+              <Text style={styles.financialStatLabel}>Collected</Text>
+              <Text style={styles.financialStatPeriod}>This Month</Text>
+            </View>
+            
+            <View style={styles.financialStatCard}>
+              <MaterialIcons name="schedule" size={24} color="#FF9800" />
+              <Text style={styles.financialStatNumber}>$7,160</Text>
+              <Text style={styles.financialStatLabel}>Pending</Text>
+              <Text style={styles.financialStatPeriod}>Outstanding</Text>
+            </View>
+            
+            <View style={styles.financialStatCard}>
+              <MaterialIcons name="bar-chart" size={24} color="#7B1FA2" />
+              <Text style={styles.financialStatNumber}>84.2%</Text>
+              <Text style={styles.financialStatLabel}>Collection Rate</Text>
+              <Text style={styles.financialStatPeriod}>This Month</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Revenue Breakdown */}
+        <View style={styles.financialSection}>
+          <Text style={styles.sectionTitle}>Revenue Breakdown</Text>
+          <View style={styles.financialCard}>
+            <View style={styles.revenueItem}>
+              <View style={styles.revenueItemLeft}>
+                <View style={[styles.revenueColorDot, { backgroundColor: '#4CAF50' }]} />
+                <Text style={styles.revenueItemLabel}>Consultation Fees</Text>
+              </View>
+              <Text style={styles.revenueItemAmount}>$18,500</Text>
+            </View>
+            
+            <View style={styles.revenueItem}>
+              <View style={styles.revenueItemLeft}>
+                <View style={[styles.revenueColorDot, { backgroundColor: '#2E4A6B' }]} />
+                <Text style={styles.revenueItemLabel}>Retainer Fees</Text>
+              </View>
+              <Text style={styles.revenueItemAmount}>$15,200</Text>
+            </View>
+            
+            <View style={styles.revenueItem}>
+              <View style={styles.revenueItemLeft}>
+                <View style={[styles.revenueColorDot, { backgroundColor: '#FF9800' }]} />
+                <Text style={styles.revenueItemLabel}>Court Representations</Text>
+              </View>
+              <Text style={styles.revenueItemAmount}>$8,300</Text>
+            </View>
+            
+            <View style={styles.revenueItem}>
+              <View style={styles.revenueItemLeft}>
+                <View style={[styles.revenueColorDot, { backgroundColor: '#7B1FA2' }]} />
+                <Text style={styles.revenueItemLabel}>Document Preparation</Text>
+              </View>
+              <Text style={styles.revenueItemAmount}>$3,280</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Recent Transactions */}
+        <View style={styles.financialSection}>
+          <Text style={styles.sectionTitle}>Recent Transactions</Text>
+          <View style={styles.financialCard}>
+            <View style={styles.transactionItem}>
+              <View style={styles.transactionLeft}>
+                <View style={[styles.transactionIcon, { backgroundColor: '#E8F5E8' }]}>
+                  <MaterialIcons name="add" size={16} color="#4CAF50" />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionTitle}>Payment Received</Text>
+                  <Text style={styles.transactionSubtitle}>Johnson vs. Smith Case</Text>
+                  <Text style={styles.transactionDate}>Dec 10, 2024</Text>
+                </View>
+              </View>
+              <Text style={styles.transactionAmount}>+$2,500</Text>
+            </View>
+            
+            <View style={styles.transactionItem}>
+              <View style={styles.transactionLeft}>
+                <View style={[styles.transactionIcon, { backgroundColor: '#E8F5E8' }]}>
+                  <MaterialIcons name="add" size={16} color="#4CAF50" />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionTitle}>Consultation Fee</Text>
+                  <Text style={styles.transactionSubtitle}>Maria Rodriguez</Text>
+                  <Text style={styles.transactionDate}>Dec 9, 2024</Text>
+                </View>
+              </View>
+              <Text style={styles.transactionAmount}>+$350</Text>
+            </View>
+            
+            <View style={styles.transactionItem}>
+              <View style={styles.transactionLeft}>
+                <View style={[styles.transactionIcon, { backgroundColor: '#FFF3E0' }]}>
+                  <MaterialIcons name="schedule" size={16} color="#FF9800" />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionTitle}>Pending Invoice</Text>
+                  <Text style={styles.transactionSubtitle}>Corporate Legal Services</Text>
+                  <Text style={styles.transactionDate}>Dec 8, 2024</Text>
+                </View>
+              </View>
+              <Text style={styles.transactionAmountPending}>$1,800</Text>
+            </View>
+            
+            <View style={styles.transactionItem}>
+              <View style={styles.transactionLeft}>
+                <View style={[styles.transactionIcon, { backgroundColor: '#E8F5E8' }]}>
+                  <MaterialIcons name="add" size={16} color="#4CAF50" />
+                </View>
+                <View style={styles.transactionDetails}>
+                  <Text style={styles.transactionTitle}>Retainer Payment</Text>
+                  <Text style={styles.transactionSubtitle}>Thompson Family Trust</Text>
+                  <Text style={styles.transactionDate}>Dec 7, 2024</Text>
+                </View>
+              </View>
+              <Text style={styles.transactionAmount}>+$5,000</Text>
+            </View>
+          </View>
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.financialSection}>
+          <Text style={styles.sectionTitle}>Quick Actions</Text>
+          <View style={styles.financialActionsGrid}>
+            <TouchableOpacity style={styles.financialActionCard}>
+              <MaterialIcons name="receipt" size={28} color="#2E4A6B" />
+              <Text style={styles.financialActionLabel}>Generate Invoice</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.financialActionCard}>
+              <MaterialIcons name="file-download" size={28} color="#2E4A6B" />
+              <Text style={styles.financialActionLabel}>Export Report</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.financialActionCard}>
+              <MaterialIcons name="payment" size={28} color="#2E4A6B" />
+              <Text style={styles.financialActionLabel}>Payment History</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity style={styles.financialActionCard}>
+              <MaterialIcons name="settings" size={28} color="#2E4A6B" />
+              <Text style={styles.financialActionLabel}>Billing Settings</Text>
+            </TouchableOpacity>
+          </View>
         </View>
       </ScrollView>
 
@@ -5343,8 +5869,8 @@ const LawfirmApp = ({
             setShowLawyerRoster(true);
           }}
         >
-          <MaterialIcons name="people" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
-          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Lawyers</Text>
+          <MaterialIcons name="settings" size={24} color={lawfirmCurrentScreen === 'lawyers' ? '#2E4A6B' : '#666'} />
+          <Text style={[styles.navText, lawfirmCurrentScreen === 'lawyers' && styles.activeNavText]}>Management</Text>
         </TouchableOpacity>
         
         <TouchableOpacity 
@@ -5599,6 +6125,7 @@ const LawfirmApp = ({
     if (showAllHomeLawyers) return renderAllHomeLawyersScreen();
     if (showAllHomeLawFirms) return renderAllHomeLawFirmsScreen();
     if (showLawyerDetails) return renderLawyerDetailScreen();
+    if (showClientDetails) return renderClientDetailsScreen();
     if (showChooseLawyer) return renderChooseLawyerScreen();
     if (showAppointments) return renderAppointmentsScreen();
     if (showLawyerRoster) return renderLawyerRosterScreen();
@@ -6405,51 +6932,56 @@ const styles = StyleSheet.create({
     minWidth: '45%',
     flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    borderRadius: 16,
+    padding: 16,
+    borderRadius: 12,
     marginBottom: 10,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
+    shadowOpacity: 0.08,
+    shadowRadius: 6,
+    elevation: 3,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
   },
   homeStatCardPrimary: {
-    backgroundColor: '#2E4A6B',
+    backgroundColor: '#ffffff',
   },
   homeStatCardSecondary: {
-    backgroundColor: '#7B1FA2',
+    backgroundColor: '#ffffff',
   },
   homeStatCardAccent: {
-    backgroundColor: '#388E3C',
+    backgroundColor: '#ffffff',
   },
   homeStatCardSuccess: {
-    backgroundColor: '#F57C00',
+    backgroundColor: '#ffffff',
   },
   homeStatIconContainer: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#f8f9fa',
     justifyContent: 'center',
     alignItems: 'center',
-    marginRight: 15,
+    marginRight: 12,
   },
   homeStatContent: {
     flex: 1,
+    justifyContent: 'center',
   },
   homeStatNumber: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    color: '#ffffff',
-    marginBottom: 2,
+    fontSize: 18,
+    fontWeight: '700',
+    color: '#2E4A6B',
+    marginBottom: 4,
+    lineHeight: 22,
   },
   homeStatLabel: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.8)',
-    fontWeight: '600',
+    fontSize: 11,
+    color: '#6c757d',
+    fontWeight: '500',
     textTransform: 'uppercase',
-    letterSpacing: 0.5,
+    letterSpacing: 0.8,
+    lineHeight: 14,
   },
   homeQuickActionsSection: {
     backgroundColor: '#ffffff',
@@ -10076,47 +10608,51 @@ const styles = StyleSheet.create({
   // Lawyer Tab Styles
   lawyerTabContainer: {
     flexDirection: 'row',
-    backgroundColor: '#f8f9fa',
+    backgroundColor: '#ffffff',
     marginHorizontal: 20,
-    marginTop: 10,
-    borderRadius: 12,
-    padding: 4,
+    marginTop: 20,
+    borderRadius: 16,
+    padding: 6,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 4,
+    borderWidth: 2,
+    borderColor: '#e9ecef',
+    overflow: 'visible',
   },
   lawyerTab: {
     flex: 1,
-    paddingVertical: 12,
-    paddingHorizontal: 16,
-    borderRadius: 8,
+    paddingVertical: 14,
+    paddingHorizontal: 12,
+    borderRadius: 12,
     alignItems: 'center',
     justifyContent: 'center',
     position: 'relative',
     flexDirection: 'row',
+    marginHorizontal: 2,
+    backgroundColor: 'transparent',
+    overflow: 'visible',
   },
   lawyerTabActive: {
-    backgroundColor: '#ffffff',
+    backgroundColor: '#2E4A6B',
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 2,
+    shadowOpacity: 0.15,
+    shadowRadius: 6,
+    elevation: 3,
   },
   lawyerTabText: {
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: '600',
     color: '#666',
   },
   lawyerTabTextActive: {
-    color: '#2E4A6B',
+    color: '#ffffff',
   },
   lawyerTabIndicator: {
-    position: 'absolute',
-    bottom: -4,
-    left: '50%',
-    marginLeft: -10,
-    width: 20,
-    height: 3,
-    backgroundColor: '#2E4A6B',
-    borderRadius: 2,
+    display: 'none',
   },
   lawyerRequestBadge: {
     backgroundColor: '#dc3545',
@@ -10124,13 +10660,26 @@ const styles = StyleSheet.create({
     paddingHorizontal: 6,
     paddingVertical: 2,
     marginLeft: 6,
-    minWidth: 20,
+    minWidth: 18,
     alignItems: 'center',
     justifyContent: 'center',
   },
+  lawyerRequestBadgeCorner: {
+    position: 'absolute',
+    top: -2,
+    right: -2,
+    backgroundColor: '#dc3545',
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 2,
+    minWidth: 18,
+    alignItems: 'center',
+    justifyContent: 'center',
+    zIndex: 10,
+  },
   lawyerRequestBadgeText: {
     color: '#ffffff',
-    fontSize: 12,
+    fontSize: 11,
     fontWeight: 'bold',
   },
 
@@ -10510,6 +11059,653 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
     lineHeight: 20,
+  },
+
+  // Financial Reports Styles
+  financialOverviewSection: {
+    backgroundColor: '#ffffff',
+    margin: 20,
+    marginBottom: 10,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  financialSection: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 15,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.08,
+    shadowRadius: 8,
+    elevation: 3,
+  },
+  financialStatsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  financialStatCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  financialStatNumber: {
+    fontSize: 20,
+    fontWeight: '700',
+    color: '#2E4A6B',
+    marginTop: 8,
+    marginBottom: 4,
+  },
+  financialStatLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#666',
+    textAlign: 'center',
+    marginBottom: 2,
+  },
+  financialStatPeriod: {
+    fontSize: 10,
+    color: '#999',
+    textAlign: 'center',
+  },
+  financialCard: {
+    backgroundColor: '#ffffff',
+  },
+  revenueItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  revenueItemLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  revenueColorDot: {
+    width: 12,
+    height: 12,
+    borderRadius: 6,
+    marginRight: 12,
+  },
+  revenueItemLabel: {
+    fontSize: 14,
+    color: '#333',
+    fontWeight: '500',
+  },
+  revenueItemAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#2E4A6B',
+  },
+  transactionItem: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 12,
+    borderBottomWidth: 1,
+    borderBottomColor: '#f0f0f0',
+  },
+  transactionLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
+  },
+  transactionIcon: {
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  transactionDetails: {
+    flex: 1,
+  },
+  transactionTitle: {
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#333',
+    marginBottom: 2,
+  },
+  transactionSubtitle: {
+    fontSize: 12,
+    color: '#666',
+    marginBottom: 2,
+  },
+  transactionDate: {
+    fontSize: 11,
+    color: '#999',
+  },
+  transactionAmount: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#4CAF50',
+  },
+  transactionAmountPending: {
+    fontSize: 16,
+    fontWeight: '700',
+    color: '#FF9800',
+  },
+  financialActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  financialActionCard: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#f8f9fa',
+    padding: 20,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  financialActionLabel: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+
+  // Client Roster Styles
+  clientCard: {
+    backgroundColor: '#ffffff',
+    borderRadius: 16,
+    marginHorizontal: 20,
+    marginVertical: 8,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.08,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  clientCardHeader: {
+    flexDirection: 'row',
+    alignItems: 'flex-start',
+    marginBottom: 16,
+  },
+  clientImageContainer: {
+    width: 60,
+    height: 60,
+    borderRadius: 30,
+    overflow: 'hidden',
+    marginRight: 16,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+    elevation: 3,
+  },
+  clientImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  clientInfo: {
+    flex: 1,
+  },
+  clientNameRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 4,
+  },
+  clientName: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+  },
+  clientStatusBadge: {
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 12,
+  },
+  clientStatusActive: {
+    backgroundColor: '#E8F5E8',
+  },
+  clientStatusInactive: {
+    backgroundColor: '#FFF3E0',
+  },
+  clientStatusText: {
+    fontSize: 12,
+    fontWeight: '600',
+  },
+  clientStatusTextActive: {
+    color: '#4CAF50',
+  },
+  clientStatusTextInactive: {
+    color: '#FF9800',
+  },
+  clientType: {
+    fontSize: 14,
+    color: '#666',
+    marginBottom: 4,
+  },
+  clientContact: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '500',
+  },
+  clientDetails: {
+    marginBottom: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  clientDetailRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 8,
+  },
+  clientDetailText: {
+    fontSize: 14,
+    color: '#666',
+    marginLeft: 8,
+    flex: 1,
+  },
+  clientStats: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#f0f0f0',
+  },
+  clientStatItem: {
+    alignItems: 'center',
+  },
+  clientStatNumber: {
+    fontSize: 18,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 4,
+  },
+  clientStatLabel: {
+    fontSize: 12,
+    color: '#666',
+    fontWeight: '500',
+  },
+  clientViewButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#f8f9fa',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  clientViewButtonText: {
+    fontSize: 14,
+    color: '#2E4A6B',
+    fontWeight: '600',
+    marginLeft: 6,
+  },
+
+  // Client Details Screen Styles (similar to User Details in LawyerApp.js)
+  clientDetailsContainer: {
+    flex: 1,
+    backgroundColor: '#f8f9fa',
+  },
+  clientDetailsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 20,
+    paddingTop: 50,
+    paddingBottom: 20,
+    backgroundColor: '#2E4A6B',
+  },
+  clientDetailsBackButton: {
+    padding: 10,
+  },
+  clientDetailsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  clientDetailsPlaceholder: {
+    width: 40,
+    height: 40,
+  },
+  clientDetailsScrollContent: {
+    flex: 1,
+  },
+
+  // Client Hero Section
+  clientDetailsHeroSection: {
+    marginBottom: 20,
+  },
+  clientDetailsHeroBackground: {
+    backgroundColor: '#2E4A6B',
+    position: 'relative',
+  },
+  clientDetailsHeroOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(46, 74, 107, 0.8)',
+  },
+  clientDetailsHeroContent: {
+    paddingHorizontal: 20,
+    paddingVertical: 30,
+    alignItems: 'center',
+  },
+  clientDetailsHeroInfo: {
+    alignItems: 'center',
+  },
+  clientDetailsImageContainer: {
+    width: 120,
+    height: 120,
+    borderRadius: 60,
+    overflow: 'hidden',
+    marginBottom: 16,
+    borderWidth: 4,
+    borderColor: '#ffffff',
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.3,
+    shadowRadius: 16,
+    elevation: 12,
+  },
+  clientDetailsHeroImage: {
+    width: '100%',
+    height: '100%',
+    resizeMode: 'cover',
+  },
+  clientDetailsHeroTitle: {
+    fontSize: 28,
+    fontWeight: 'bold',
+    color: '#ffffff',
+    marginBottom: 8,
+    textAlign: 'center',
+  },
+  clientDetailsHeroSubtitle: {
+    fontSize: 18,
+    color: '#e8f4f8',
+    marginBottom: 20,
+    textAlign: 'center',
+  },
+  clientDetailsStatsRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  clientDetailsStat: {
+    alignItems: 'center',
+    paddingHorizontal: 20,
+  },
+  clientDetailsStatNumber: {
+    fontSize: 24,
+    fontWeight: 'bold',
+    color: '#ffffff',
+  },
+  clientDetailsStatLabel: {
+    fontSize: 14,
+    color: '#e8f4f8',
+    marginTop: 4,
+  },
+  clientDetailsStatDivider: {
+    width: 1,
+    height: 30,
+    backgroundColor: '#e8f4f8',
+  },
+
+  // Contact Information Section
+  clientDetailsContactCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  clientDetailsContactHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clientDetailsContactIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e8f4f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  clientDetailsContactTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+  },
+  clientDetailsContactInfo: {
+    gap: 12,
+  },
+  clientDetailsContactItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingVertical: 8,
+  },
+  clientDetailsContactText: {
+    fontSize: 16,
+    color: '#333',
+    marginLeft: 12,
+    flex: 1,
+  },
+
+  // Business Information Section
+  clientDetailsBusinessCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  clientDetailsBusinessHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clientDetailsBusinessIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e8f4f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  clientDetailsBusinessTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+  },
+  clientDetailsBusinessInfo: {
+    gap: 16,
+  },
+  clientDetailsBusinessItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+  },
+  clientDetailsBusinessLabel: {
+    fontSize: 16,
+    color: '#666',
+    fontWeight: '500',
+  },
+  clientDetailsBusinessValue: {
+    fontSize: 16,
+    color: '#2E4A6B',
+    fontWeight: '600',
+  },
+  clientDetailsStatusBadge: {
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    borderRadius: 16,
+  },
+  clientDetailsStatusActive: {
+    backgroundColor: '#E8F5E8',
+  },
+  clientDetailsStatusInactive: {
+    backgroundColor: '#FFF3E0',
+  },
+  clientDetailsStatusText: {
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  clientDetailsStatusTextActive: {
+    color: '#4CAF50',
+  },
+  clientDetailsStatusTextInactive: {
+    color: '#FF9800',
+  },
+
+  // Cases Section
+  clientDetailsCasesCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  clientDetailsCasesHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clientDetailsCasesIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e8f4f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  clientDetailsCasesTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+  },
+  clientDetailsCasesInfo: {
+    alignItems: 'center',
+  },
+  clientDetailsCasesStats: {
+    flexDirection: 'row',
+    justifyContent: 'center',
+    gap: 40,
+  },
+  clientDetailsCasesStat: {
+    alignItems: 'center',
+  },
+  clientDetailsCasesStatNumber: {
+    fontSize: 32,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    marginBottom: 8,
+  },
+  clientDetailsCasesStatLabel: {
+    fontSize: 14,
+    color: '#666',
+    fontWeight: '500',
+  },
+
+  // Quick Actions Section
+  clientDetailsActionsCard: {
+    backgroundColor: '#ffffff',
+    marginHorizontal: 20,
+    marginBottom: 20,
+    borderRadius: 16,
+    padding: 20,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.1,
+    shadowRadius: 12,
+    elevation: 6,
+  },
+  clientDetailsActionsHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 16,
+  },
+  clientDetailsActionsIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#e8f4f8',
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginRight: 12,
+  },
+  clientDetailsActionsTitle: {
+    fontSize: 20,
+    fontWeight: 'bold',
+    color: '#2E4A6B',
+    flex: 1,
+  },
+  clientDetailsActionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: 12,
+  },
+  clientDetailsActionButton: {
+    flex: 1,
+    minWidth: '45%',
+    backgroundColor: '#f8f9fa',
+    padding: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    borderWidth: 1,
+    borderColor: '#e9ecef',
+  },
+  clientDetailsActionText: {
+    fontSize: 12,
+    fontWeight: '600',
+    color: '#2E4A6B',
+    textAlign: 'center',
+    marginTop: 8,
+  },
+  clientDetailsBottomSpacing: {
+    height: 40,
   },
 });
 
