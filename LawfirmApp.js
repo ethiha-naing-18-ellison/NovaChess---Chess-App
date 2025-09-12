@@ -2665,9 +2665,6 @@ const LawfirmApp = ({
             >
               <MaterialIcons name="settings" size={24} color="#ffffff" />
             </TouchableOpacity>
-            <View style={styles.appointmentsBadge}>
-              <Text style={styles.appointmentsBadgeText}>{pendingAppointments.length}</Text>
-            </View>
           </View>
         </View>
 
