@@ -13,6 +13,7 @@ import {
 
 // Import separate account systems
 import LawyerApp from './LawyerApp';
+import LawfirmApp from './LawfirmApp';
 
 export default function App() {
   const [currentScreen, setCurrentScreen] = useState('splash');
@@ -549,7 +550,27 @@ export default function App() {
       'DUI': ['DUI Defense', 'Traffic Violations', 'Criminal Defense', 'License Suspension', 'Field Sobriety Tests', 'Breathalyzer Tests'],
       'Employment': ['Employment Law', 'Discrimination', 'Harassment', 'Wrongful Termination', 'Wage & Hour', 'Workplace Safety'],
       'Real Estate': ['Real Estate Transactions', 'Property Law', 'Commercial Leasing', 'Residential Leasing', 'Property Management', 'Real Estate Litigation'],
-      'Contract': ['Contract Law', 'Business Contracts', 'Employment Contracts', 'Service Agreements', 'Contract Disputes', 'Contract Review']
+      'Contract': ['Contract Law', 'Business Contracts', 'Employment Contracts', 'Service Agreements', 'Contract Disputes', 'Contract Review'],
+      
+      // Additional categories from See All page
+      'Civil Rights': ['Civil Rights Law', 'Discrimination Cases', 'Constitutional Law', 'Voting Rights', 'Religious Freedom', 'Free Speech'],
+      'Environmental': ['Environmental Law', 'Environmental Compliance', 'Pollution Control', 'Environmental Impact', 'Waste Management', 'Clean Energy Law'],
+      'Bankruptcy': ['Bankruptcy Law', 'Chapter 7 Bankruptcy', 'Chapter 13 Bankruptcy', 'Business Bankruptcy', 'Debt Relief', 'Asset Protection'],
+      'Estate Planning': ['Estate Planning', 'Wills & Trusts', 'Probate Law', 'Elder Law', 'Asset Protection', 'Estate Administration'],
+      'Intellectual Property': ['Patent Law', 'Trademark Law', 'Copyright Law', 'Trade Secrets', 'IP Litigation', 'Licensing Agreements'],
+      'Workers Comp': ['Workers Compensation', 'Workplace Injuries', 'Disability Claims', 'Occupational Diseases', 'Workers Rights', 'Compensation Appeals'],
+      'Medical Malpractice': ['Medical Malpractice', 'Hospital Negligence', 'Surgical Errors', 'Misdiagnosis', 'Birth Injuries', 'Nursing Home Abuse'],
+      'Securities': ['Securities Law', 'Investment Fraud', 'Stock Market Law', 'SEC Compliance', 'Corporate Finance', 'Investment Disputes'],
+      'Patent': ['Patent Applications', 'Patent Prosecution', 'Patent Litigation', 'Patent Strategy', 'Prior Art Search', 'Patent Portfolio Management'],
+      'Trademark': ['Trademark Registration', 'Trademark Protection', 'Trademark Disputes', 'Brand Protection', 'Trademark Licensing', 'Domain Name Disputes'],
+      'Copyright': ['Copyright Registration', 'Copyright Infringement', 'Digital Rights', 'Entertainment Law', 'Publishing Rights', 'Fair Use Defense'],
+      'Corporate': ['Corporate Law', 'Business Formation', 'Corporate Governance', 'Compliance', 'Corporate Transactions', 'Board Advisory'],
+      'Insurance': ['Insurance Law', 'Insurance Claims', 'Bad Faith Insurance', 'Insurance Coverage', 'Insurance Disputes', 'Policy Analysis'],
+      'Healthcare': ['Healthcare Law', 'Medical Compliance', 'HIPAA Compliance', 'Healthcare Transactions', 'Medical Licensing', 'Healthcare Litigation'],
+      'Construction': ['Construction Law', 'Construction Contracts', 'Construction Disputes', 'Mechanic Liens', 'Construction Defects', 'Building Code Compliance'],
+      'Entertainment': ['Entertainment Law', 'Media Law', 'Sports Law', 'Contract Negotiations', 'Intellectual Property', 'Talent Representation'],
+      'Sports': ['Sports Law', 'Athlete Representation', 'Sports Contracts', 'Sports Litigation', 'League Compliance', 'Endorsement Deals'],
+      'Education': ['Education Law', 'School District Law', 'Student Rights', 'Special Education', 'Title IX', 'Academic Freedom']
     };
     return categoryServiceMap[categoryName] || [];
   };
@@ -775,7 +796,7 @@ export default function App() {
               style={[
                 styles.categorySliderCard,
                 isSelected && styles.activeCategorySliderCard,
-                index === 0 && { marginLeft: 20 } // Add left margin to first card
+                index === 0 && { marginLeft: 12 } // Add left margin to first card
               ]}
               onPress={() => toggleCategory(item.name)}
             >
@@ -1001,7 +1022,7 @@ export default function App() {
         horizontal 
         showsHorizontalScrollIndicator={false}
         style={styles.categorySliderRow}
-        contentContainerStyle={styles.categorySliderContent}
+        contentContainerStyle={[styles.categorySliderContent, { paddingLeft: 0 }]} // No extra padding for law firm
       >
         {categories.map((category, index) => {
           const isSelected = selectedCategories.includes(category.name);
@@ -1011,7 +1032,8 @@ export default function App() {
               style={[
                 styles.categorySliderCard,
                 isSelected && styles.activeCategorySliderCard,
-                index === 0 && { marginLeft: 20 }
+                { width: 103}, // Smaller width specifically for Law Firm registration
+                index === 0 && { marginLeft: 0 } // No margin for law firm since container has padding
               ]}
               onPress={() => toggleCategory(category.name)}
             >
@@ -1185,6 +1207,9 @@ export default function App() {
               <View style={styles.lawFirmCategoriesSlider}>
                 <View style={styles.lawFirmCategoriesSliderHeader}>
                   <Text style={styles.lawFirmCategoriesSliderTitle}>Popular Categories</Text>
+                  <TouchableOpacity onPress={() => setShowSeeAllCategoriesSelection(true)}>
+                    <Text style={styles.seeAllButton}>See All</Text>
+                  </TouchableOpacity>
                 </View>
                 
                 {renderCategorySlider(firstRowCategories, 0)}
@@ -1551,13 +1576,15 @@ export default function App() {
       { name: 'Maritime Safety', icon: 'SHIELD' }
     ];
 
-    const currentItems = userRole === 'USER' ? allCategories : allServices;
-    const currentSelections = userRole === 'USER' ? selectedCategories : selectedServices;
-    const itemType = userRole === 'USER' ? 'Categories' : 'Services';
-    const itemTypeSingular = userRole === 'USER' ? 'Category' : 'Service';
+    const currentItems = (userRole === 'USER' || userRole === 'LAW_FIRM') ? allCategories : allServices;
+    const currentSelections = (userRole === 'USER' || userRole === 'LAW_FIRM') ? selectedCategories : selectedServices;
+    const itemType = (userRole === 'USER' || userRole === 'LAW_FIRM') ? 'Categories' : 'Services';
+    const itemTypeSingular = (userRole === 'USER' || userRole === 'LAW_FIRM') ? 'Category' : 'Service';
 
     const handleBackToCategories = () => {
       setShowSeeAllCategoriesSelection(false);
+      // For law firms, we stay on the law firm registration screen
+      // For users/lawyers, we go back to categories screen
     };
 
     return (
@@ -6113,8 +6140,20 @@ export default function App() {
             />
           );
         case 'LAW_FIRM':
-          // TODO: Create LawFirmApp component similar to LawyerApp
-          return renderHomeScreen(); // Temporary - will be replaced with LawFirmApp
+          return (
+            <LawfirmApp 
+              userRole={userRole}
+              setCurrentScreen={setCurrentScreen}
+              selectedCategories={selectedCategories}
+              setSelectedCategories={setSelectedCategories}
+              selectedServices={selectedServices}
+              setSelectedServices={setSelectedServices}
+              showCustomAlert={showCustomAlert}
+              ProfessionalIcon={ProfessionalIcon}
+              lawFirmForm={lawFirmForm}
+              userProfile={userProfile}
+            />
+          );
         default:
           return renderHomeScreen();
       }
@@ -9955,7 +9994,7 @@ const styles = StyleSheet.create({
     marginBottom: 15,
   },
   categorySliderContent: {
-    paddingLeft: 0,
+    paddingLeft: 8,
     paddingRight: 20,
   },
   categorySliderCard: {
@@ -9966,7 +10005,7 @@ const styles = StyleSheet.create({
     marginRight: 8,
     alignItems: 'center',
     justifyContent: 'center',
-    width: 80,
+    width: 110,
     height: 90,
     shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
@@ -10130,6 +10169,9 @@ const styles = StyleSheet.create({
     marginBottom: 20,
   },
   lawFirmCategoriesSliderHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
     marginBottom: 12,
   },
   lawFirmCategoriesSliderTitle: {
