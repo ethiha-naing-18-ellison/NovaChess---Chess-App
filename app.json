@@ -15,14 +15,20 @@
     "ios": {
       "supportsTablet": true
     },
-      "android": {
-        "adaptiveIcon": {
-          "foregroundImage": "./assets/adaptive-icon.png",
-          "backgroundColor": "#ffffff"
-        }
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/adaptive-icon.png",
+        "backgroundColor": "#ffffff"
       },
+      "package": "com.thiha1843.lawgo"
+    },
     "web": {
       "favicon": "./assets/favicon.png"
+    },
+    "extra": {
+      "eas": {
+        "projectId": "6e59a073-d57f-4495-b599-7a811d417f69"
+      }
     }
   }
 }

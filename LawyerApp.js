@@ -1109,7 +1109,7 @@ const LawyerApp = ({
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.lawyerProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawyerProfileMenuItem}>
               <View style={styles.lawyerProfileMenuItemLeft}>
                 <ProfessionalIcon type="BRIEFCASE" size={24} color="#2E4A6B" />
                 <Text style={styles.lawyerProfileMenuItemText}>All Payments</Text>
@@ -1117,9 +1117,9 @@ const LawyerApp = ({
               <View style={styles.lawyerProfileComingSoonBadge}>
                 <Text style={styles.lawyerProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.lawyerProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawyerProfileMenuItem}>
               <View style={styles.lawyerProfileMenuItemLeft}>
                 <ProfessionalIcon type="CHECKMARK" size={24} color="#2E4A6B" />
                 <Text style={styles.lawyerProfileMenuItemText}>Manage Payment</Text>
@@ -1127,9 +1127,9 @@ const LawyerApp = ({
               <View style={styles.lawyerProfileComingSoonBadge}>
                 <Text style={styles.lawyerProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.lawyerProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawyerProfileMenuItem}>
               <View style={styles.lawyerProfileMenuItemLeft}>
                 <ProfessionalIcon type="LOCATION" size={24} color="#2E4A6B" />
                 <Text style={styles.lawyerProfileMenuItemText}>Edit Address</Text>
@@ -1137,9 +1137,9 @@ const LawyerApp = ({
               <View style={styles.lawyerProfileComingSoonBadge}>
                 <Text style={styles.lawyerProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.lawyerProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawyerProfileMenuItem}>
               <View style={styles.lawyerProfileMenuItemLeft}>
                 <ProfessionalIcon type="SETTINGS" size={24} color="#2E4A6B" />
                 <Text style={styles.lawyerProfileMenuItemText}>Settings</Text>
@@ -1147,7 +1147,7 @@ const LawyerApp = ({
               <View style={styles.lawyerProfileComingSoonBadge}>
                 <Text style={styles.lawyerProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity style={styles.lawyerProfileMenuItem} onPress={handleLogout}>
               <View style={styles.lawyerProfileMenuItemLeft}>

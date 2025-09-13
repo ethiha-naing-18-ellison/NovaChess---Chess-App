@@ -53,6 +53,22 @@ export default function App() {
   const [showReviewBooking, setShowReviewBooking] = useState(false);
   const [expandedMessage, setExpandedMessage] = useState(false);
   const [showAppointmentConfirmation, setShowAppointmentConfirmation] = useState(false);
+  
+  // Law Firm Booking States
+  const [showLawFirmAppointmentBooking, setShowLawFirmAppointmentBooking] = useState(false);
+  const [showLawFirmReviewBooking, setShowLawFirmReviewBooking] = useState(false);
+  const [showLawFirmAppointmentConfirmation, setShowLawFirmAppointmentConfirmation] = useState(false);
+  const [lawFirmSelectedDate, setLawFirmSelectedDate] = useState(null);
+  const [lawFirmSelectedTimeSlot, setLawFirmSelectedTimeSlot] = useState(null);
+  const [lawFirmConsultationType, setLawFirmConsultationType] = useState('online');
+  const [lawFirmUserMessage, setLawFirmUserMessage] = useState('');
+  const [lawFirmCurrentMonth, setLawFirmCurrentMonth] = useState(new Date().getMonth());
+  const [lawFirmCurrentYear, setLawFirmCurrentYear] = useState(new Date().getFullYear());
+  const [lawFirmShowMonthPicker, setLawFirmShowMonthPicker] = useState(false);
+  const [lawFirmCustomTime, setLawFirmCustomTime] = useState({ hour: '09', minute: '00', period: 'AM' });
+  const [lawFirmShowTimePicker, setLawFirmShowTimePicker] = useState(false);
+  const [lawFirmExpandedMessage, setLawFirmExpandedMessage] = useState(false);
+  
   const [showBookings, setShowBookings] = useState(false);
   const [selectedBookingFilter, setSelectedBookingFilter] = useState('All');
   const [userBookings, setUserBookings] = useState([]);
@@ -1888,24 +1904,42 @@ export default function App() {
         </View>
 
         <ScrollView style={styles.bookingDetailsContent} showsVerticalScrollIndicator={false}>
-          {/* Lawyer Information Card */}
+          {/* Lawyer/Law Firm Information Card */}
           <View style={styles.bookingDetailsLawyerCard}>
             <View style={styles.bookingDetailsLawyerContent}>
               <View style={styles.bookingDetailsLawyerAvatar}>
-                {selectedBooking.lawyerProfileImage ? (
-                  <Image source={selectedBooking.lawyerProfileImage} style={styles.bookingDetailsLawyerProfileImage} />
+                {/* Handle both lawyer and law firm bookings */}
+                {selectedBooking.type === 'lawfirm' ? (
+                  selectedBooking.lawFirmImage ? (
+                    <Image source={selectedBooking.lawFirmImage} style={styles.bookingDetailsLawyerProfileImage} />
+                  ) : (
+                    <ProfessionalIcon type="BUILDING" size={40} color="#2E4A6B" />
+                  )
                 ) : (
-                  <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
+                  selectedBooking.lawyerProfileImage ? (
+                    <Image source={selectedBooking.lawyerProfileImage} style={styles.bookingDetailsLawyerProfileImage} />
+                  ) : (
+                    <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
+                  )
                 )}
               </View>
               <View style={styles.bookingDetailsLawyerInfo}>
-                <Text style={styles.bookingDetailsLawyerName}>{selectedBooking.lawyerName}</Text>
-                <Text style={styles.bookingDetailsLawyerSpecialty}>{selectedBooking.lawyerSpecialty}</Text>
+                {/* Display name based on booking type */}
+                <Text style={styles.bookingDetailsLawyerName}>
+                  {selectedBooking.type === 'lawfirm' ? selectedBooking.lawFirmName : selectedBooking.lawyerName}
+                </Text>
+                {/* Display specialty/service based on booking type */}
+                <Text style={styles.bookingDetailsLawyerSpecialty}>
+                  {selectedBooking.type === 'lawfirm' ? 'Professional Legal Services' : selectedBooking.lawyerSpecialty}
+                </Text>
                 <View style={styles.bookingDetailsLawyerStats}>
                   <View style={styles.bookingDetailsLawyerStat}>
                     <ProfessionalIcon type="STAR" size={16} color="#FFD700" />
                     <Text style={styles.bookingDetailsLawyerStatText}>
-                      {lawyerRatings[selectedBooking.lawyerName]?.rating || '4.4'}
+                      {selectedBooking.type === 'lawfirm' 
+                        ? '4.8' 
+                        : (lawyerRatings[selectedBooking.lawyerName]?.rating || '4.4')
+                      }
                     </Text>
                   </View>
                   <View style={styles.bookingDetailsLawyerStat}>
@@ -1914,7 +1948,9 @@ export default function App() {
                   </View>
                   <View style={styles.bookingDetailsLawyerStat}>
                     <ProfessionalIcon type="DOLLAR" size={16} color="#2E4A6B" />
-                    <Text style={styles.bookingDetailsLawyerStatText}>$16/hr</Text>
+                    <Text style={styles.bookingDetailsLawyerStatText}>
+                      {selectedBooking.type === 'lawfirm' ? '$15/hr' : '$16/hr'}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -1983,7 +2019,9 @@ export default function App() {
             style={styles.rateLawyerButton}
             onPress={() => setShowRatingPage(true)}
           >
-            <Text style={styles.rateLawyerButtonText}>Rate Lawyer</Text>
+            <Text style={styles.rateLawyerButtonText}>
+              {selectedBooking?.type === 'lawfirm' ? 'Rate Law Firm' : 'Rate Lawyer'}
+            </Text>
           </TouchableOpacity>
           <TouchableOpacity 
             style={styles.rescheduleButton}
@@ -2141,16 +2179,31 @@ export default function App() {
             >
               <View style={styles.bookingContent}>
                 <View style={styles.bookingAvatar}>
-                  {booking.lawyerProfileImage ? (
-                    <Image source={booking.lawyerProfileImage} style={styles.bookingProfileImage} />
+                  {/* Handle both lawyer and law firm bookings */}
+                  {booking.type === 'lawfirm' ? (
+                    booking.lawFirmImage ? (
+                      <Image source={booking.lawFirmImage} style={styles.bookingProfileImage} />
+                    ) : (
+                      <ProfessionalIcon type="BUILDING" size={24} color="#2E4A6B" />
+                    )
                   ) : (
-                    <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
+                    booking.lawyerProfileImage ? (
+                      <Image source={booking.lawyerProfileImage} style={styles.bookingProfileImage} />
+                    ) : (
+                      <ProfessionalIcon type="USER" size={24} color="#2E4A6B" />
+                    )
                   )}
                 </View>
                 
                 <View style={styles.bookingDetails}>
-                  <Text style={styles.bookingLawyerName}>{booking.lawyerName}</Text>
-                  <Text style={styles.bookingSpecialty}>{booking.lawyerSpecialty}</Text>
+                  {/* Display name based on booking type */}
+                  <Text style={styles.bookingLawyerName}>
+                    {booking.type === 'lawfirm' ? booking.lawFirmName : booking.lawyerName}
+                  </Text>
+                  {/* Display specialty/service based on booking type */}
+                  <Text style={styles.bookingSpecialty}>
+                    {booking.type === 'lawfirm' ? 'Legal Consultation' : booking.lawyerSpecialty}
+                  </Text>
                   <View style={styles.bookingDateTime}>
                     <ProfessionalIcon type="CALENDAR" size={16} color="#6c757d" />
                     <Text style={styles.bookingDateTimeText}>{booking.date}, {booking.time}</Text>
@@ -2930,6 +2983,740 @@ export default function App() {
     );
   };
 
+  const renderLawFirmAppointmentBookingScreen = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const timeSlots = [
+      { id: '9-10', label: '9AM - 10AM' },
+      { id: '10-11', label: '10AM - 11AM' },
+      { id: '11-12', label: '11AM - 12PM' },
+      { id: '2-3', label: '2PM - 3PM' },
+      { id: '3-4', label: '3PM - 4PM' },
+      { id: '4-5', label: '4PM - 5PM' }
+    ];
+
+    const consultationTypes = [
+      { id: 'online', label: 'Online Consultation', extra: '' },
+      { id: 'firm_office', label: 'Meet at Law Firm Office', extra: '(Charges 2% Extra)' },
+      { id: 'suggest_time', label: 'Suggest your time', extra: '(Charges 4% Extra)' }
+    ];
+
+    // Generate calendar days
+    const generateCalendarDays = () => {
+      const firstDay = new Date(lawFirmCurrentYear, lawFirmCurrentMonth, 1);
+      const lastDay = new Date(lawFirmCurrentYear, lawFirmCurrentMonth + 1, 0);
+      const daysInMonth = lastDay.getDate();
+      const startingDayOfWeek = firstDay.getDay();
+      
+      const days = [];
+      
+      // Add empty cells for days before the first day of the month
+      for (let i = 0; i < startingDayOfWeek; i++) {
+        days.push(null);
+      }
+      
+      // Add days of the month
+      for (let day = 1; day <= daysInMonth; day++) {
+        days.push(day);
+      }
+      
+      return days;
+    };
+
+    const handleMonthChange = (direction) => {
+      if (direction === 'prev') {
+        if (lawFirmCurrentMonth === 0) {
+          setLawFirmCurrentMonth(11);
+          setLawFirmCurrentYear(lawFirmCurrentYear - 1);
+        } else {
+          setLawFirmCurrentMonth(lawFirmCurrentMonth - 1);
+        }
+      } else {
+        if (lawFirmCurrentMonth === 11) {
+          setLawFirmCurrentMonth(0);
+          setLawFirmCurrentYear(lawFirmCurrentYear + 1);
+        } else {
+          setLawFirmCurrentMonth(lawFirmCurrentMonth + 1);
+        }
+      }
+    };
+
+    const handleCustomTimeChange = (type, value) => {
+      setLawFirmCustomTime(prev => ({ ...prev, [type]: value }));
+    };
+
+    const handleSubmitAppointment = () => {
+      if (!lawFirmSelectedDate) {
+        Alert.alert('Missing Information', 'Please select a date from the calendar');
+        return;
+      }
+      
+      if (!lawFirmSelectedTimeSlot && !lawFirmShowTimePicker) {
+        Alert.alert('Missing Information', 'Please select a time slot or choose custom time');
+        return;
+      }
+      
+      if (!lawFirmUserMessage.trim()) {
+        Alert.alert('Missing Information', 'Please enter your message describing your legal issue');
+        return;
+      }
+      
+      setShowLawFirmReviewBooking(true);
+    };
+
+    return (
+      <View style={styles.appointmentContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.appointmentHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowLawFirmAppointmentBooking(false)} 
+            style={styles.appointmentBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.appointmentTitle}>Select Date, Time</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.appointmentContent} showsVerticalScrollIndicator={false}>
+          {/* Date Selection */}
+          <View style={styles.appointmentSection}>
+            <Text style={styles.appointmentSectionTitle}>Select Date</Text>
+            <View style={styles.calendarContainer}>
+              <View style={styles.calendarHeader}>
+                <TouchableOpacity 
+                  style={styles.navButton}
+                  onPress={() => handleMonthChange('prev')}
+                >
+                  <ProfessionalIcon type="CHEVRON_LEFT" size={20} color="#2E4A6B" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.monthYearContainer}
+                  onPress={() => setLawFirmShowMonthPicker(!lawFirmShowMonthPicker)}
+                >
+                  <Text style={styles.calendarMonth}>{months[lawFirmCurrentMonth]} {lawFirmCurrentYear}</Text>
+                  <ProfessionalIcon type="CHEVRON_DOWN" size={16} color="#2E4A6B" />
+                </TouchableOpacity>
+                
+                <TouchableOpacity 
+                  style={styles.navButton}
+                  onPress={() => handleMonthChange('next')}
+                >
+                  <ProfessionalIcon type="CHEVRON_RIGHT" size={20} color="#2E4A6B" />
+                </TouchableOpacity>
+              </View>
+
+              {/* Month/Year Picker */}
+              {lawFirmShowMonthPicker && (
+                <View style={styles.monthYearPicker}>
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.monthPicker}>
+                    {months.map((month, index) => (
+                      <TouchableOpacity
+                        key={index}
+                        style={[
+                          styles.monthOption,
+                          lawFirmCurrentMonth === index && styles.selectedMonthOption
+                        ]}
+                        onPress={() => {
+                          setLawFirmCurrentMonth(index);
+                          setLawFirmShowMonthPicker(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.monthOptionText,
+                          lawFirmCurrentMonth === index && styles.selectedMonthOptionText
+                        ]}>
+                          {month}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                  
+                  <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.yearPicker}>
+                    {Array.from({length: 10}, (_, i) => lawFirmCurrentYear - 5 + i).map((year) => (
+                      <TouchableOpacity
+                        key={year}
+                        style={[
+                          styles.yearOption,
+                          lawFirmCurrentYear === year && styles.selectedYearOption
+                        ]}
+                        onPress={() => {
+                          setLawFirmCurrentYear(year);
+                          setLawFirmShowMonthPicker(false);
+                        }}
+                      >
+                        <Text style={[
+                          styles.yearOptionText,
+                          lawFirmCurrentYear === year && styles.selectedYearOptionText
+                        ]}>
+                          {year}
+                        </Text>
+                      </TouchableOpacity>
+                    ))}
+                  </ScrollView>
+                </View>
+              )}
+              
+              <View style={styles.calendarWeekdays}>
+                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day, index) => (
+                  <Text key={index} style={styles.weekdayText}>{day}</Text>
+                ))}
+              </View>
+              
+              <View style={styles.calendarGrid}>
+                {generateCalendarDays().map((day, index) => (
+                  <TouchableOpacity
+                    key={index}
+                    style={[
+                      styles.calendarDay,
+                      day && lawFirmSelectedDate === day && styles.selectedCalendarDay
+                    ]}
+                    onPress={() => day && setLawFirmSelectedDate(day)}
+                    disabled={!day}
+                  >
+                    {day && (
+                      <Text style={[
+                        styles.calendarDayText,
+                        lawFirmSelectedDate === day && styles.selectedCalendarDayText
+                      ]}>
+                        {day}
+                      </Text>
+                    )}
+                  </TouchableOpacity>
+                ))}
+              </View>
+            </View>
+          </View>
+
+          {/* Time Slot Selection */}
+          <View style={styles.appointmentSection}>
+            <View style={styles.timeSelectionHeader}>
+              <Text style={styles.appointmentSectionTitle}>Select Time Slot</Text>
+              <TouchableOpacity 
+                style={styles.customTimeButton}
+                onPress={() => {
+                  setLawFirmShowTimePicker(!lawFirmShowTimePicker);
+                  if (lawFirmShowTimePicker) {
+                    setLawFirmSelectedTimeSlot(null);
+                  }
+                }}
+              >
+                <Text style={styles.customTimeButtonText}>
+                  {lawFirmShowTimePicker ? 'Use Preset Times' : 'Custom Time'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+
+            {!lawFirmShowTimePicker ? (
+              <View style={styles.timeSlotsContainer}>
+                {timeSlots.map((slot) => (
+                  <TouchableOpacity
+                    key={slot.id}
+                    style={[
+                      styles.timeSlotButton,
+                      lawFirmSelectedTimeSlot === slot.id && styles.selectedTimeSlotButton
+                    ]}
+                    onPress={() => setLawFirmSelectedTimeSlot(slot.id)}
+                  >
+                    <Text style={[
+                      styles.timeSlotText,
+                      lawFirmSelectedTimeSlot === slot.id && styles.selectedTimeSlotText
+                    ]}>
+                      {slot.label}
+                    </Text>
+                  </TouchableOpacity>
+                ))}
+              </View>
+            ) : (
+              <View style={styles.customTimeContainer}>
+                <View style={styles.timePickerRow}>
+                  <View style={styles.timePickerColumn}>
+                    <Text style={styles.timePickerLabel}>Hour</Text>
+                    <ScrollView style={styles.timePickerScroll} showsVerticalScrollIndicator={false}>
+                      {Array.from({length: 12}, (_, i) => i + 1).map((hour) => (
+                        <TouchableOpacity
+                          key={hour}
+                          style={[
+                            styles.timePickerOption,
+                            lawFirmCustomTime.hour === hour.toString().padStart(2, '0') && styles.selectedTimePickerOption
+                          ]}
+                          onPress={() => handleCustomTimeChange('hour', hour.toString().padStart(2, '0'))}
+                        >
+                          <Text style={[
+                            styles.timePickerOptionText,
+                            lawFirmCustomTime.hour === hour.toString().padStart(2, '0') && styles.selectedTimePickerOptionText
+                          ]}>
+                            {hour}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                  
+                  <View style={styles.timePickerColumn}>
+                    <Text style={styles.timePickerLabel}>Minute</Text>
+                    <ScrollView style={styles.timePickerScroll} showsVerticalScrollIndicator={false}>
+                      {['00', '15', '30', '45'].map((minute) => (
+                        <TouchableOpacity
+                          key={minute}
+                          style={[
+                            styles.timePickerOption,
+                            lawFirmCustomTime.minute === minute && styles.selectedTimePickerOption
+                          ]}
+                          onPress={() => handleCustomTimeChange('minute', minute)}
+                        >
+                          <Text style={[
+                            styles.timePickerOptionText,
+                            lawFirmCustomTime.minute === minute && styles.selectedTimePickerOptionText
+                          ]}>
+                            {minute}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                  
+                  <View style={styles.timePickerColumn}>
+                    <Text style={styles.timePickerLabel}>Period</Text>
+                    <ScrollView style={styles.timePickerScroll} showsVerticalScrollIndicator={false}>
+                      {['AM', 'PM'].map((period) => (
+                        <TouchableOpacity
+                          key={period}
+                          style={[
+                            styles.timePickerOption,
+                            lawFirmCustomTime.period === period && styles.selectedTimePickerOption
+                          ]}
+                          onPress={() => handleCustomTimeChange('period', period)}
+                        >
+                          <Text style={[
+                            styles.timePickerOptionText,
+                            lawFirmCustomTime.period === period && styles.selectedTimePickerOptionText
+                          ]}>
+                            {period}
+                          </Text>
+                        </TouchableOpacity>
+                      ))}
+                    </ScrollView>
+                  </View>
+                </View>
+                
+                <View style={styles.selectedTimeDisplay}>
+                  <Text style={styles.selectedTimeText}>
+                    Selected Time: {lawFirmCustomTime.hour}:{lawFirmCustomTime.minute} {lawFirmCustomTime.period}
+                  </Text>
+                </View>
+              </View>
+            )}
+          </View>
+
+          {/* Provide Details */}
+          <View style={styles.appointmentSection}>
+            <Text style={styles.appointmentSectionTitle}>Provide Details</Text>
+            <Text style={styles.detailsInstruction}>
+              Please provide minimum input of your issue and write the problem you are facing, send relevant documents if any for best consultation.
+            </Text>
+            <View style={styles.messageInputContainer}>
+              <TextInput
+                style={styles.messageInput}
+                placeholder="Your Message"
+                value={lawFirmUserMessage}
+                onChangeText={setLawFirmUserMessage}
+                multiline
+                numberOfLines={4}
+                textAlignVertical="top"
+              />
+            </View>
+          </View>
+
+          {/* Consultation Type */}
+          <View style={styles.appointmentSection}>
+            <Text style={styles.appointmentSectionTitle}>Consultation Type</Text>
+            <View style={styles.consultationTypesContainer}>
+              {consultationTypes.map((type) => (
+                <TouchableOpacity
+                  key={type.id}
+                  style={styles.consultationTypeRow}
+                  onPress={() => setLawFirmConsultationType(type.id)}
+                >
+                  <View style={styles.radioButtonContainer}>
+                    <View style={[
+                      styles.radioButton,
+                      lawFirmConsultationType === type.id && styles.selectedRadioButton
+                    ]}>
+                      {lawFirmConsultationType === type.id && (
+                        <View style={styles.radioButtonInner} />
+                      )}
+                    </View>
+                  </View>
+                  <View style={styles.consultationTypeTextContainer}>
+                    <Text style={styles.consultationTypeLabel}>{type.label}</Text>
+                    {type.extra && (
+                      <Text style={styles.consultationTypeExtra}>{type.extra}</Text>
+                    )}
+                  </View>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Submit Button */}
+        <View style={styles.appointmentFooter}>
+          <TouchableOpacity 
+            style={styles.submitAppointmentButton}
+            onPress={handleSubmitAppointment}
+          >
+            <Text style={styles.submitAppointmentText}>Proceed</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLawFirmReviewBookingScreen = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const timeSlots = [
+      { id: '9-10', label: '9AM - 10AM' },
+      { id: '10-11', label: '10AM - 11AM' },
+      { id: '11-12', label: '11AM - 12PM' },
+      { id: '2-3', label: '2PM - 3PM' },
+      { id: '3-4', label: '3PM - 4PM' },
+      { id: '4-5', label: '4PM - 5PM' }
+    ];
+
+    const consultationTypes = [
+      { id: 'online', label: 'Online Consultation', extra: '' },
+      { id: 'firm_office', label: 'Meet at Law Firm Office', extra: '(Charges 2% Extra)' },
+      { id: 'suggest_time', label: 'Suggest your time', extra: '(Charges 4% Extra)' }
+    ];
+
+    const getTimeDisplay = () => {
+      if (lawFirmShowTimePicker) {
+        return `${lawFirmCustomTime.hour}:${lawFirmCustomTime.minute} ${lawFirmCustomTime.period}`;
+      }
+      return timeSlots.find(slot => slot.id === lawFirmSelectedTimeSlot)?.label || 'Not selected';
+    };
+
+    const getConsultationTypeDisplay = () => {
+      return consultationTypes.find(type => type.id === lawFirmConsultationType)?.label || 'Online Consultation';
+    };
+
+    const getConsultationAmount = () => {
+      const baseAmount = 15.00;
+      let extraCharge = 0;
+      
+      if (lawFirmConsultationType === 'firm_office') {
+        extraCharge = baseAmount * 0.02; // 2% extra
+      } else if (lawFirmConsultationType === 'suggest_time') {
+        extraCharge = baseAmount * 0.04; // 4% extra
+      }
+      
+      return {
+        base: baseAmount,
+        extra: extraCharge,
+        gst: (baseAmount + extraCharge) * 0.1, // 10% GST
+        total: baseAmount + extraCharge + ((baseAmount + extraCharge) * 0.1)
+      };
+    };
+
+    const handleFinalProceed = () => {
+      setShowLawFirmAppointmentConfirmation(true);
+    };
+
+    const handleModifyMessage = () => {
+      setShowLawFirmReviewBooking(false);
+      // Go back to law firm appointment booking page
+    };
+
+    const amounts = getConsultationAmount();
+
+    return (
+      <View style={styles.reviewBookingContainer}>
+        <StatusBar style="dark" />
+        
+        {/* Header */}
+        <View style={styles.reviewBookingHeader}>
+          <TouchableOpacity 
+            onPress={() => setShowLawFirmReviewBooking(false)} 
+            style={styles.reviewBookingBackButton}
+          >
+            <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+          </TouchableOpacity>
+          <Text style={styles.reviewBookingTitle}>Review Booking</Text>
+          <View style={styles.placeholder} />
+        </View>
+
+        <ScrollView style={styles.reviewBookingContent} showsVerticalScrollIndicator={false}>
+          {/* Law Firm Information Card */}
+          <View style={styles.lawyerInfoCard}>
+            <View style={styles.lawyerInfoContent}>
+              <View style={styles.lawyerInfoAvatar}>
+                {selectedLawFirm?.image ? (
+                  <Image source={selectedLawFirm.image} style={styles.lawyerInfoProfileImage} />
+                ) : (
+                  <ProfessionalIcon type="BUILDING" size={40} color="#2E4A6B" />
+                )}
+              </View>
+              <View style={styles.lawyerInfoDetails}>
+                <Text style={styles.lawyerInfoName}>{selectedLawFirm?.name}</Text>
+                <Text style={styles.lawyerInfoSpecialty}>Professional Legal Services</Text>
+                <View style={styles.lawyerInfoStats}>
+                  <View style={styles.lawyerInfoStat}>
+                    <ProfessionalIcon type="STAR" size={16} color="#FFD700" />
+                    <Text style={styles.lawyerInfoStatText}>{selectedLawFirm?.rating}</Text>
+                  </View>
+                  <View style={styles.lawyerInfoStat}>
+                    <ProfessionalIcon type="USER" size={16} color="#2E4A6B" />
+                    <Text style={styles.lawyerInfoStatText}>{selectedLawFirm?.lawyers} Lawyers</Text>
+                  </View>
+                  <View style={styles.lawyerInfoStat}>
+                    <ProfessionalIcon type="CHECKMARK" size={16} color="#2E4A6B" />
+                    <Text style={styles.lawyerInfoStatText}>15+ Years</Text>
+                  </View>
+                </View>
+              </View>
+            </View>
+          </View>
+
+          {/* Your Message Section */}
+          <View style={styles.messageReviewCard}>
+            <View style={styles.messageReviewHeader}>
+              <Text style={styles.messageReviewTitle}>Your Message</Text>
+              <TouchableOpacity onPress={handleModifyMessage}>
+                <Text style={styles.modifyButton}>Modify</Text>
+              </TouchableOpacity>
+            </View>
+            <Text style={styles.messageReviewText}>
+              {lawFirmExpandedMessage ? lawFirmUserMessage : lawFirmUserMessage.substring(0, 100) + '...'}
+            </Text>
+            {lawFirmUserMessage.length > 100 && (
+              <TouchableOpacity onPress={() => setLawFirmExpandedMessage(!lawFirmExpandedMessage)}>
+                <Text style={styles.expandButton}>
+                  {lawFirmExpandedMessage ? 'Show Less' : 'Expand...'}
+                </Text>
+              </TouchableOpacity>
+            )}
+            <View style={styles.attachmentInfo}>
+              <ProfessionalIcon type="PAPERCLIP" size={16} color="#6c757d" />
+              <Text style={styles.attachmentText}>FIR.doc</Text>
+            </View>
+          </View>
+
+          {/* Consultation Details */}
+          <View style={styles.consultationDetailsCard}>
+            <Text style={styles.consultationDetailsTitle}>{getConsultationTypeDisplay()}</Text>
+            <View style={styles.consultationDetailsList}>
+              <View style={styles.consultationDetailRow}>
+                <Text style={styles.consultationDetailLabel}>Date:</Text>
+                <Text style={styles.consultationDetailValue}>
+                  {lawFirmSelectedDate.toString().padStart(2, '0')}.{(lawFirmCurrentMonth + 1).toString().padStart(2, '0')}.{lawFirmCurrentYear}
+                </Text>
+              </View>
+              <View style={styles.consultationDetailRow}>
+                <Text style={styles.consultationDetailLabel}>Time Slot:</Text>
+                <Text style={styles.consultationDetailValue}>{getTimeDisplay()}</Text>
+              </View>
+              <View style={styles.consultationDetailRow}>
+                <Text style={styles.consultationDetailLabel}>Amount:</Text>
+                <Text style={styles.consultationDetailValue}>${amounts.base.toFixed(2)}</Text>
+              </View>
+              {amounts.extra > 0 && (
+                <View style={styles.consultationDetailRow}>
+                  <Text style={styles.consultationDetailLabel}>Extra Charge:</Text>
+                  <Text style={styles.consultationDetailValue}>${amounts.extra.toFixed(2)}</Text>
+                </View>
+              )}
+              <View style={styles.consultationDetailRow}>
+                <Text style={styles.consultationDetailLabel}>GST:</Text>
+                <Text style={styles.consultationDetailValue}>${amounts.gst.toFixed(2)}</Text>
+              </View>
+              <View style={[styles.consultationDetailRow, styles.totalAmountRow]}>
+                <Text style={styles.totalAmountLabel}>Total Amount:</Text>
+                <Text style={styles.totalAmountValue}>${amounts.total.toFixed(2)}</Text>
+              </View>
+            </View>
+          </View>
+        </ScrollView>
+
+        {/* Proceed Button */}
+        <View style={styles.reviewBookingFooter}>
+          <TouchableOpacity 
+            style={styles.finalProceedButton}
+            onPress={handleFinalProceed}
+          >
+            <Text style={styles.finalProceedText}>Submit Appointment</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    );
+  };
+
+  const renderLawFirmAppointmentConfirmationScreen = () => {
+    const months = [
+      'January', 'February', 'March', 'April', 'May', 'June',
+      'July', 'August', 'September', 'October', 'November', 'December'
+    ];
+
+    const timeSlots = [
+      { id: '9-10', label: '9AM - 10AM' },
+      { id: '10-11', label: '10AM - 11AM' },
+      { id: '11-12', label: '11AM - 12PM' },
+      { id: '2-3', label: '2PM - 3PM' },
+      { id: '3-4', label: '3PM - 4PM' },
+      { id: '4-5', label: '4PM - 5PM' }
+    ];
+
+    const getTimeDisplay = () => {
+      if (lawFirmShowTimePicker) {
+        return `${lawFirmCustomTime.hour}:${lawFirmCustomTime.minute} ${lawFirmCustomTime.period}`;
+      }
+      return timeSlots.find(slot => slot.id === lawFirmSelectedTimeSlot)?.label || 'Not selected';
+    };
+
+    const handleConfirmAppointment = () => {
+      // Save the booking to user's bookings list
+      const newBooking = {
+        id: Date.now().toString(),
+        lawFirmName: selectedLawFirm?.name,
+        lawFirmImage: selectedLawFirm?.image,
+        date: `${lawFirmSelectedDate.toString().padStart(2, '0')}.${(lawFirmCurrentMonth + 1).toString().padStart(2, '0')}.${lawFirmCurrentYear}`,
+        time: getTimeDisplay(),
+        status: 'Confirmed',
+        bookingDate: new Date().toISOString(),
+        message: lawFirmUserMessage,
+        consultationType: lawFirmConsultationType,
+        type: 'lawfirm' // To distinguish from lawyer bookings
+      };
+      
+      setUserBookings(prev => [newBooking, ...prev]);
+      
+      setShowLawFirmAppointmentConfirmation(false);
+      setShowLawFirmReviewBooking(false);
+      setShowLawFirmAppointmentBooking(false);
+      setShowLawFirmDetails(false);
+      setCurrentScreen('home');
+    };
+
+    const handleViewBookingDetails = () => {
+      // Save the booking to user's bookings list
+      const newBooking = {
+        id: Date.now().toString(),
+        lawFirmName: selectedLawFirm?.name,
+        lawFirmImage: selectedLawFirm?.image,
+        date: `${lawFirmSelectedDate.toString().padStart(2, '0')}.${(lawFirmCurrentMonth + 1).toString().padStart(2, '0')}.${lawFirmCurrentYear}`,
+        time: getTimeDisplay(),
+        status: 'Confirmed',
+        bookingDate: new Date().toISOString(),
+        message: lawFirmUserMessage,
+        consultationType: lawFirmConsultationType,
+        type: 'lawfirm' // To distinguish from lawyer bookings
+      };
+      
+      setUserBookings(prev => [newBooking, ...prev]);
+      
+      // Set the selected booking and show booking details
+      setSelectedBooking(newBooking);
+      setShowLawFirmAppointmentConfirmation(false);
+      setShowLawFirmReviewBooking(false);
+      setShowLawFirmAppointmentBooking(false);
+      setShowLawFirmDetails(false);
+      setShowBookingDetails(true);
+    };
+
+    return (
+      <View style={styles.confirmationOverlay}>
+        <View style={styles.confirmationContainer}>
+          <StatusBar style="dark" />
+          
+          {/* Header */}
+          <View style={styles.confirmationPageHeader}>
+            <TouchableOpacity 
+              onPress={handleConfirmAppointment} 
+              style={styles.confirmationBackButton}
+            >
+              <ProfessionalIcon type="ARROW_LEFT" size={24} color="#2E4A6B" />
+            </TouchableOpacity>
+            <Text style={styles.confirmationPageTitle}>Booking Confirmed</Text>
+            <View style={styles.placeholder} />
+          </View>
+          
+          {/* Success Icon */}
+          <View style={styles.confirmationIconContainer}>
+            <View style={styles.confirmationIcon}>
+              <ProfessionalIcon type="CHECKMARK" size={40} color="#4CAF50" />
+            </View>
+          </View>
+
+          {/* Confirmation Content */}
+          <View style={styles.confirmationContent}>
+            <Text style={styles.confirmationTitle}>Congratulations!</Text>
+            <Text style={styles.confirmationSubtitle}>
+              Congrats, you have successfully booked the appointment with the law firm, please follow up on time. You can always modify the booking.
+            </Text>
+            
+            {/* Appointment Details */}
+            <View style={styles.confirmationDetailsCard}>
+              <View style={styles.confirmationDetailRow}>
+                <Text style={styles.confirmationDetailLabel}>Law Firm:</Text>
+                <Text style={styles.confirmationDetailValue}>{selectedLawFirm?.name}</Text>
+              </View>
+              <View style={styles.confirmationDetailRow}>
+                <Text style={styles.confirmationDetailLabel}>Date:</Text>
+                <Text style={styles.confirmationDetailValue}>
+                  {months[lawFirmCurrentMonth]} {lawFirmSelectedDate}, {lawFirmCurrentYear}
+                </Text>
+              </View>
+              <View style={styles.confirmationDetailRow}>
+                <Text style={styles.confirmationDetailLabel}>Time:</Text>
+                <Text style={styles.confirmationDetailValue}>{getTimeDisplay()}</Text>
+              </View>
+              <View style={styles.confirmationDetailRow}>
+                <Text style={styles.confirmationDetailLabel}>Service:</Text>
+                <Text style={styles.confirmationDetailValue}>Legal Consultation</Text>
+              </View>
+            </View>
+
+            {/* Success Message */}
+            <Text style={styles.confirmationMessage}>
+              You will receive a confirmation email shortly. Please arrive 10 minutes before your scheduled time.
+            </Text>
+          </View>
+
+          {/* LawGo Logo */}
+          <View style={styles.confirmationLogoContainer}>
+            <View style={styles.confirmationLogo}>
+              <Text style={styles.confirmationLogoText}>⚖️</Text>
+            </View>
+          </View>
+
+          {/* Footer Actions */}
+          <View style={styles.confirmationFooter}>
+            <TouchableOpacity onPress={handleConfirmAppointment}>
+              <Text style={styles.goToHomeLink}>Go to Home</Text>
+            </TouchableOpacity>
+            
+            <TouchableOpacity 
+              style={styles.viewBookingDetailsButton}
+              onPress={handleViewBookingDetails}
+            >
+              <Text style={styles.viewBookingDetailsText}>View Booking Details</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </View>
+    );
+  };
+
   const renderLawyerDetailsScreen = () => (
     <View style={styles.lawyerDetailsContainer}>
       <StatusBar style="light" />
@@ -3395,8 +4182,15 @@ export default function App() {
   );
 
   const renderRatingPage = () => {
-    const currentLawyer = selectedBooking?.lawyerName || 'Mathew Bairstow';
-    const currentLawyerRating = lawyerRatings[currentLawyer] || { rating: 4.4, reviewCount: 127 };
+    // Handle both lawyer and law firm ratings
+    const isLawFirm = selectedBooking?.type === 'lawfirm';
+    const currentEntity = isLawFirm 
+      ? (selectedBooking?.lawFirmName || 'Johnson & Associates Law Firm')
+      : (selectedBooking?.lawyerName || 'Mathew Bairstow');
+    const currentEntityRating = lawyerRatings[currentEntity] || { 
+      rating: isLawFirm ? 4.8 : 4.4, 
+      reviewCount: isLawFirm ? 89 : 127 
+    };
     
     const handleStarPress = (rating) => {
       setUserRating(rating);
@@ -3408,13 +4202,13 @@ export default function App() {
         return;
       }
       
-      // Update lawyer's rating (simple average calculation)
-      const newReviewCount = currentLawyerRating.reviewCount + 1;
-      const newRating = ((currentLawyerRating.rating * currentLawyerRating.reviewCount) + userRating) / newReviewCount;
+      // Update entity's rating (simple average calculation)
+      const newReviewCount = currentEntityRating.reviewCount + 1;
+      const newRating = ((currentEntityRating.rating * currentEntityRating.reviewCount) + userRating) / newReviewCount;
       
       setLawyerRatings(prev => ({
         ...prev,
-        [currentLawyer]: {
+        [currentEntity]: {
           rating: Math.round(newRating * 10) / 10, // Round to 1 decimal place
           reviewCount: newReviewCount
         }
@@ -3455,23 +4249,37 @@ export default function App() {
         </View>
 
         <ScrollView style={styles.ratingContent} showsVerticalScrollIndicator={false}>
-          {/* Lawyer Information Card */}
+          {/* Lawyer/Law Firm Information Card */}
           <View style={styles.ratingLawyerCard}>
             <View style={styles.ratingLawyerContent}>
               <View style={styles.ratingLawyerAvatar}>
-                {selectedBooking?.lawyerProfileImage ? (
-                  <Image source={selectedBooking.lawyerProfileImage} style={styles.ratingLawyerProfileImage} />
+                {/* Handle both lawyer and law firm images */}
+                {isLawFirm ? (
+                  selectedBooking?.lawFirmImage ? (
+                    <Image source={selectedBooking.lawFirmImage} style={styles.ratingLawyerProfileImage} />
+                  ) : (
+                    <ProfessionalIcon type="BUILDING" size={40} color="#2E4A6B" />
+                  )
                 ) : (
-                  <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
+                  selectedBooking?.lawyerProfileImage ? (
+                    <Image source={selectedBooking.lawyerProfileImage} style={styles.ratingLawyerProfileImage} />
+                  ) : (
+                    <ProfessionalIcon type="USER" size={40} color="#2E4A6B" />
+                  )
                 )}
               </View>
               <View style={styles.ratingLawyerInfo}>
-                <Text style={styles.ratingLawyerName}>{currentLawyer}</Text>
-                <Text style={styles.ratingLawyerSpecialty}>{selectedBooking?.lawyerSpecialty || 'Tax, Property'}</Text>
+                <Text style={styles.ratingLawyerName}>{currentEntity}</Text>
+                <Text style={styles.ratingLawyerSpecialty}>
+                  {isLawFirm 
+                    ? 'Professional Legal Services' 
+                    : (selectedBooking?.lawyerSpecialty || 'Tax, Property')
+                  }
+                </Text>
                 <View style={styles.ratingLawyerStats}>
                   <View style={styles.ratingLawyerStat}>
                     <ProfessionalIcon type="STAR" size={16} color="#FFD700" />
-                    <Text style={styles.ratingLawyerStatText}>{currentLawyerRating.rating}</Text>
+                    <Text style={styles.ratingLawyerStatText}>{currentEntityRating.rating}</Text>
                   </View>
                   <View style={styles.ratingLawyerStat}>
                     <ProfessionalIcon type="LOCATION" size={16} color="#2E4A6B" />
@@ -3479,7 +4287,9 @@ export default function App() {
                   </View>
                   <View style={styles.ratingLawyerStat}>
                     <ProfessionalIcon type="DOLLAR" size={16} color="#2E4A6B" />
-                    <Text style={styles.ratingLawyerStatText}>$16/hr</Text>
+                    <Text style={styles.ratingLawyerStatText}>
+                      {isLawFirm ? '$15/hr' : '$16/hr'}
+                    </Text>
                   </View>
                 </View>
               </View>
@@ -3490,7 +4300,8 @@ export default function App() {
           <View style={styles.ratingConsultationCard}>
             <Text style={styles.ratingConsultationTitle}>
               {selectedBooking?.consultationType === 'online' ? 'Online Consultation' : 
-               selectedBooking?.consultationType === 'lawyer_place' ? 'Meet at Lawyer\'s place' : 
+               selectedBooking?.consultationType === 'lawyer_place' ? 'Meet at Lawyer\'s place' :
+               selectedBooking?.consultationType === 'firm_office' ? 'Meet at Law Firm Office' :
                'Suggest your time'}
             </Text>
             <View style={styles.ratingConsultationList}>
@@ -3627,7 +4438,7 @@ export default function App() {
               </View>
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.userProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.userProfileMenuItem}>
               <View style={styles.userProfileMenuItemLeft}>
                 <ProfessionalIcon type="BRIEFCASE" size={24} color="#2E4A6B" />
                 <Text style={styles.userProfileMenuItemText}>All Payments</Text>
@@ -3635,9 +4446,9 @@ export default function App() {
               <View style={styles.userProfileComingSoonBadge}>
                 <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.userProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.userProfileMenuItem}>
               <View style={styles.userProfileMenuItemLeft}>
                 <ProfessionalIcon type="CHECKMARK" size={24} color="#2E4A6B" />
                 <Text style={styles.userProfileMenuItemText}>Manage Payment</Text>
@@ -3645,9 +4456,9 @@ export default function App() {
               <View style={styles.userProfileComingSoonBadge}>
                 <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.userProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.userProfileMenuItem}>
               <View style={styles.userProfileMenuItemLeft}>
                 <ProfessionalIcon type="LOCATION" size={24} color="#2E4A6B" />
                 <Text style={styles.userProfileMenuItemText}>Edit Address</Text>
@@ -3655,9 +4466,9 @@ export default function App() {
               <View style={styles.userProfileComingSoonBadge}>
                 <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.userProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.userProfileMenuItem}>
               <View style={styles.userProfileMenuItemLeft}>
                 <ProfessionalIcon type="SETTINGS" size={24} color="#2E4A6B" />
                 <Text style={styles.userProfileMenuItemText}>Settings</Text>
@@ -3665,7 +4476,7 @@ export default function App() {
               <View style={styles.userProfileComingSoonBadge}>
                 <Text style={styles.userProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
             <TouchableOpacity style={styles.userProfileMenuItem} onPress={handleLogout}>
               <View style={styles.userProfileMenuItemLeft}>
@@ -5492,6 +6303,16 @@ export default function App() {
           {/* Bottom Spacing */}
           <View style={styles.lawFirmDetailsBottomSpacing} />
         </ScrollView>
+        
+        {/* Schedule Appointment Footer */}
+        <View style={styles.lawyerDetailsFooter}>
+          <TouchableOpacity 
+            style={styles.scheduleAppointmentButton}
+            onPress={() => setShowLawFirmAppointmentBooking(true)}
+          >
+            <Text style={styles.scheduleAppointmentText}>Schedule an Appointment</Text>
+          </TouchableOpacity>
+        </View>
       </View>
     );
   };
@@ -5957,6 +6778,34 @@ export default function App() {
     return (
       <>
         {renderViewAllLawyersPage()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  // Law Firm Booking Screens (must be checked BEFORE showLawFirmDetails)
+  if (showLawFirmAppointmentConfirmation) {
+    return (
+      <>
+        {renderLawFirmAppointmentConfirmationScreen()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showLawFirmReviewBooking) {
+    return (
+      <>
+        {renderLawFirmReviewBookingScreen()}
+        {renderCustomModal()}
+      </>
+    );
+  }
+  
+  if (showLawFirmAppointmentBooking) {
+    return (
+      <>
+        {renderLawFirmAppointmentBookingScreen()}
         {renderCustomModal()}
       </>
     );

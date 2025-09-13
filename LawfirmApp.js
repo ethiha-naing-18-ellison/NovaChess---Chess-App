@@ -3472,7 +3472,7 @@ const LawfirmApp = ({
               <MaterialIcons name="chevron-right" size={20} color="#666" />
             </TouchableOpacity>
 
-            <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
               <View style={styles.lawfirmProfileMenuItemLeft}>
                 <MaterialIcons name="payment" size={24} color="#2E4A6B" />
                 <Text style={styles.lawfirmProfileMenuItemText}>All Payments</Text>
@@ -3480,9 +3480,9 @@ const LawfirmApp = ({
               <View style={styles.lawfirmProfileComingSoonBadge}>
                 <Text style={styles.lawfirmProfileComingSoonText}>Coming Soon</Text>
           </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity 
+            {/* <TouchableOpacity 
               style={styles.lawfirmProfileMenuItem}
               onPress={() => setShowFinancialReports(true)}
             >
@@ -3491,9 +3491,9 @@ const LawfirmApp = ({
                 <Text style={styles.lawfirmProfileMenuItemText}>Financial Reports</Text>
           </View>
               <MaterialIcons name="chevron-right" size={20} color="#666" />
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
               <View style={styles.lawfirmProfileMenuItemLeft}>
                 <MaterialIcons name="security" size={24} color="#2E4A6B" />
                 <Text style={styles.lawfirmProfileMenuItemText}>Security Settings</Text>
@@ -3501,9 +3501,9 @@ const LawfirmApp = ({
               <View style={styles.lawfirmProfileComingSoonBadge}>
                 <Text style={styles.lawfirmProfileComingSoonText}>Coming Soon</Text>
               </View>
-            </TouchableOpacity>
+            </TouchableOpacity> */}
 
-            <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
+            {/* <TouchableOpacity style={styles.lawfirmProfileMenuItem}>
               <View style={styles.lawfirmProfileMenuItemLeft}>
                 <MaterialIcons name="help" size={24} color="#2E4A6B" />
                 <Text style={styles.lawfirmProfileMenuItemText}>Help & Support</Text>
@@ -3511,7 +3511,7 @@ const LawfirmApp = ({
               <View style={styles.lawfirmProfileComingSoonBadge}>
                 <Text style={styles.lawfirmProfileComingSoonText}>Coming Soon</Text>
               </View>
-        </TouchableOpacity>
+        </TouchableOpacity> */}
 
             <TouchableOpacity style={styles.lawfirmProfileMenuItem} onPress={handleLogout}>
               <View style={styles.lawfirmProfileMenuItemLeft}>
