@@ -177,6 +177,24 @@ export default function App() {
       case 'customize':
         setCurrentScreen(SCREENS.CUSTOMIZE);
         break;
+      case 'vs-ai':
+        // Reload customizations and go to game setup with AI mode pre-selected
+        await reloadCustomizations();
+        setGameConfig(prev => ({ ...prev, gameMode: 'ai' }));
+        setCurrentScreen(SCREENS.GAME_SETUP);
+        break;
+      case 'vs-online-friend':
+        // Reload customizations and go to game setup with Online Friend mode pre-selected
+        await reloadCustomizations();
+        setGameConfig(prev => ({ ...prev, gameMode: 'online-friend' }));
+        setCurrentScreen(SCREENS.GAME_SETUP);
+        break;
+      case 'vs-local-friend':
+        // Reload customizations and go to game setup with Local Friend mode pre-selected
+        await reloadCustomizations();
+        setGameConfig(prev => ({ ...prev, gameMode: 'local-friend' }));
+        setCurrentScreen(SCREENS.GAME_SETUP);
+        break;
       default:
         break;
     }
@@ -264,7 +282,9 @@ export default function App() {
       // Record the abandoned game
       await saveGameToHistory({
         result: GameResult.ABANDONED,
-        mode: gameConfig.gameMode === 'ai' ? GameMode.VS_AI : GameMode.VS_HUMAN,
+        mode: gameConfig.gameMode === 'ai' ? GameMode.VS_AI : 
+              gameConfig.gameMode === 'online-friend' ? GameMode.VS_HUMAN : 
+              GameMode.VS_HUMAN, // local-friend is also VS_HUMAN for now
         playerColor: gameConfig.playerColor,
         difficulty: gameConfig.difficulty,
         timerEnabled: gameConfig.timerEnabled,
@@ -578,6 +598,7 @@ export default function App() {
           <GameSetupScreen
             onStartGame={handleGameSetupStart}
             onBack={handleGameSetupBack}
+            initialGameMode={gameConfig.gameMode}
           />
         );
       

@@ -35,6 +35,10 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
         id: game.id,
         opponent: game.mode === 'vs_ai' 
           ? `${formatGameMode(game.mode)} (${game.difficulty || 'Unknown'})`
+          : game.mode === 'vs_human' && game.gameMode === 'online-friend'
+          ? 'vs Online Friend'
+          : game.mode === 'vs_human' && game.gameMode === 'local-friend'
+          ? 'vs Local Friend'
           : formatGameMode(game.mode),
         result: formatGameResult(game.result),
         date: formatDate(game.timestamp),

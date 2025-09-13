@@ -8,9 +8,9 @@ import {
   Alert,
 } from 'react-native';
 
-const GameSetupScreen = ({ onStartGame, onBack }) => {
+const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
   const [selectedColor, setSelectedColor] = useState('white');
-  const [gameMode, setGameMode] = useState('ai'); // 'ai' or 'friend'
+  const [gameMode, setGameMode] = useState(initialGameMode); // 'ai', 'online-friend', or 'local-friend'
   const [timerEnabled, setTimerEnabled] = useState(true);
   const [timeControl, setTimeControl] = useState('10+0'); // 10 minutes + 0 increment
   const [difficulty, setDifficulty] = useState('medium');
@@ -70,20 +70,39 @@ const GameSetupScreen = ({ onStartGame, onBack }) => {
         <TouchableOpacity
           style={[
             styles.gameModeOption,
-            gameMode === 'friend' && styles.selectedGameModeOption,
+            gameMode === 'online-friend' && styles.selectedGameModeOption,
           ]}
-          onPress={() => setGameMode('friend')}
+          onPress={() => setGameMode('online-friend')}
         >
           <View style={styles.gameModeIcon}>
-            <Text style={styles.gameModeEmoji}>👥</Text>
+            <Text style={styles.gameModeEmoji}>🌐</Text>
           </View>
           <Text style={[
             styles.gameModeLabel,
-            gameMode === 'friend' && styles.selectedGameModeLabel
+            gameMode === 'online-friend' && styles.selectedGameModeLabel
           ]}>
-            vs Friend
+            vs Online Friend
           </Text>
-          <Text style={styles.gameModeDescription}>Play with another person</Text>
+          <Text style={styles.gameModeDescription}>Play with friends online</Text>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.gameModeOption,
+            gameMode === 'local-friend' && styles.selectedGameModeOption,
+          ]}
+          onPress={() => setGameMode('local-friend')}
+        >
+          <View style={styles.gameModeIcon}>
+            <Text style={styles.gameModeEmoji}>📱</Text>
+          </View>
+          <Text style={[
+            styles.gameModeLabel,
+            gameMode === 'local-friend' && styles.selectedGameModeLabel
+          ]}>
+            vs Local Friend
+          </Text>
+          <Text style={styles.gameModeDescription}>Play on same device</Text>
         </TouchableOpacity>
       </View>
     </View>
@@ -238,7 +257,9 @@ const GameSetupScreen = ({ onStartGame, onBack }) => {
           <View style={styles.previewCard}>
             <Text style={styles.previewText}>
               <Text style={styles.previewLabel}>Mode: </Text>
-              {gameMode === 'ai' ? 'vs AI' : 'vs Friend'}
+              {gameMode === 'ai' ? 'vs AI' : 
+               gameMode === 'online-friend' ? 'vs Online Friend' : 
+               'vs Local Friend'}
             </Text>
             <Text style={styles.previewText}>
               <Text style={styles.previewLabel}>Color: </Text>
@@ -285,7 +306,7 @@ const styles = StyleSheet.create({
     padding: 8,
   },
   backButtonText: {
-    color: '#4CAF50',
+    color: '#6b46c1',
     fontSize: 16,
     fontWeight: '600',
   },
@@ -302,13 +323,13 @@ const styles = StyleSheet.create({
     paddingHorizontal: 20,
   },
   section: {
-    marginVertical: 20,
+    marginVertical: 12,
   },
   sectionTitle: {
     color: '#ffffff',
-    fontSize: 20,
+    fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
+    marginBottom: 10,
   },
   subsectionTitle: {
     color: '#cccccc',
@@ -319,96 +340,95 @@ const styles = StyleSheet.create({
   colorSelector: {
     flexDirection: 'row',
     justifyContent: 'space-between',
+    gap: 10,
   },
   colorOption: {
     flex: 1,
     alignItems: 'center',
-    padding: 20,
-    marginHorizontal: 5,
+    padding: 12,
     backgroundColor: '#2a2a2a',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   selectedColorOption: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#2d4a2d',
+    borderColor: '#6b46c1',
+    backgroundColor: '#2d1b4e',
   },
   colorPreview: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    marginBottom: 10,
+    width: 30,
+    height: 30,
+    borderRadius: 15,
+    marginBottom: 6,
     borderWidth: 2,
     borderColor: '#666666',
   },
   colorLabel: {
     color: '#cccccc',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   selectedColorLabel: {
-    color: '#4CAF50',
+    color: '#6b46c1',
   },
   colorDescription: {
     color: '#888888',
-    fontSize: 12,
+    fontSize: 10,
     textAlign: 'center',
   },
   gameModeSelector: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+    flexDirection: 'column',
+    gap: 8,
   },
   gameModeOption: {
-    flex: 1,
+    flexDirection: 'row',
     alignItems: 'center',
-    padding: 20,
-    marginHorizontal: 5,
+    padding: 12,
     backgroundColor: '#2a2a2a',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: 'transparent',
   },
   selectedGameModeOption: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#2d4a2d',
+    borderColor: '#6b46c1',
+    backgroundColor: '#2d1b4e',
   },
   gameModeIcon: {
-    marginBottom: 10,
+    marginRight: 12,
   },
   gameModeEmoji: {
-    fontSize: 32,
+    fontSize: 20,
   },
   gameModeLabel: {
     color: '#cccccc',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 5,
+    flex: 1,
   },
   selectedGameModeLabel: {
-    color: '#4CAF50',
+    color: '#6b46c1',
   },
   gameModeDescription: {
     color: '#888888',
-    fontSize: 12,
-    textAlign: 'center',
+    fontSize: 10,
+    textAlign: 'right',
   },
   timerToggle: {
     alignItems: 'center',
     marginBottom: 15,
   },
   toggleButton: {
-    paddingHorizontal: 30,
-    paddingVertical: 12,
+    paddingHorizontal: 24,
+    paddingVertical: 10,
     backgroundColor: '#2a2a2a',
-    borderRadius: 25,
+    borderRadius: 20,
     borderWidth: 2,
     borderColor: '#666666',
   },
   toggleButtonActive: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: '#6b46c1',
+    borderColor: '#6b46c1',
   },
   toggleButtonText: {
     color: '#cccccc',
@@ -426,17 +446,17 @@ const styles = StyleSheet.create({
     paddingVertical: 10,
   },
   timeControlOption: {
-    paddingHorizontal: 15,
-    paddingVertical: 8,
-    marginRight: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 6,
+    marginRight: 8,
     backgroundColor: '#2a2a2a',
-    borderRadius: 20,
+    borderRadius: 16,
     borderWidth: 1,
     borderColor: '#666666',
   },
   selectedTimeControl: {
-    backgroundColor: '#4CAF50',
-    borderColor: '#4CAF50',
+    backgroundColor: '#6b46c1',
+    borderColor: '#6b46c1',
   },
   timeControlText: {
     color: '#cccccc',
@@ -450,33 +470,33 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    gap: 8,
   },
   difficultyOption: {
     width: '48%',
-    padding: 15,
-    marginBottom: 10,
+    padding: 10,
     backgroundColor: '#2a2a2a',
-    borderRadius: 12,
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: 'transparent',
     alignItems: 'center',
   },
   selectedDifficulty: {
-    borderColor: '#4CAF50',
-    backgroundColor: '#2d4a2d',
+    borderColor: '#6b46c1',
+    backgroundColor: '#2d1b4e',
   },
   difficultyLabel: {
     color: '#cccccc',
-    fontSize: 16,
+    fontSize: 14,
     fontWeight: '600',
-    marginBottom: 5,
+    marginBottom: 3,
   },
   selectedDifficultyLabel: {
-    color: '#4CAF50',
+    color: '#6b46c1',
   },
   difficultyDescription: {
     color: '#888888',
-    fontSize: 12,
+    fontSize: 10,
     textAlign: 'center',
   },
   selectedDifficultyDescription: {
@@ -487,10 +507,10 @@ const styles = StyleSheet.create({
   },
   previewCard: {
     backgroundColor: '#2a2a2a',
-    padding: 20,
-    borderRadius: 12,
+    padding: 16,
+    borderRadius: 8,
     borderWidth: 1,
-    borderColor: '#4CAF50',
+    borderColor: '#6b46c1',
   },
   previewText: {
     color: '#cccccc',
@@ -498,7 +518,7 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   previewLabel: {
-    color: '#4CAF50',
+    color: '#6b46c1',
     fontWeight: '600',
   },
   footer: {
@@ -506,9 +526,9 @@ const styles = StyleSheet.create({
     backgroundColor: '#2a2a2a',
   },
   startButton: {
-    backgroundColor: '#4CAF50',
-    paddingVertical: 15,
-    borderRadius: 12,
+    backgroundColor: '#6b46c1',
+    paddingVertical: 12,
+    borderRadius: 8,
     alignItems: 'center',
   },
   startButtonText: {
