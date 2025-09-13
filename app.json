@@ -1,7 +1,7 @@
 {
   "expo": {
-    "name": "Law Go",
-    "slug": "law-go",
+    "name": "NovaChess",
+    "slug": "nova-chess",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/applicationlogo.png",
@@ -20,7 +20,7 @@
         "foregroundImage": "./assets/applicationlogo.png",
         "backgroundColor": "#ffffff"
       },
-      "package": "com.thiha1843.lawgo"
+      "package": "com.thiha1843.novachess"
     },
     "web": {
       "favicon": "./assets/applicationlogo.png"
