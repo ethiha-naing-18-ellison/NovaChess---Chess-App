@@ -14,13 +14,18 @@ export const ChessBoard = ({
   boardTheme,
   pieceStyle,
   pieceType,
-  boardSize
+  boardSize,
+  playerColor = 'white'
 }) => {
   const renderSquare = (row, col) => {
-    const piece = board[row][col];
-    const isSelected = selectedSquare && selectedSquare.row === row && selectedSquare.col === col;
-    const isPossibleMove = possibleMoves.some(move => move.row === row && move.col === col);
-    const isKingInCheck = isInCheck && kingPosition && kingPosition.row === row && kingPosition.col === col;
+    // Flip coordinates if player is black
+    const actualRow = playerColor === 'black' ? 7 - row : row;
+    const actualCol = playerColor === 'black' ? 7 - col : col;
+    
+    const piece = board[actualRow][actualCol];
+    const isSelected = selectedSquare && selectedSquare.row === actualRow && selectedSquare.col === actualCol;
+    const isPossibleMove = possibleMoves.some(move => move.row === actualRow && move.col === actualCol);
+    const isKingInCheck = isInCheck && kingPosition && kingPosition.row === actualRow && kingPosition.col === actualCol;
     
     // Use customization settings for colors and size
     const isLight = (row + col) % 2 === 0;
@@ -50,7 +55,7 @@ export const ChessBoard = ({
       <TouchableOpacity
         key={`${row}-${col}`}
         style={squareStyle}
-        onPress={() => onSquarePress(row, col)}
+        onPress={() => onSquarePress(actualRow, actualCol)}
         activeOpacity={0.7}
       >
         {piece && (

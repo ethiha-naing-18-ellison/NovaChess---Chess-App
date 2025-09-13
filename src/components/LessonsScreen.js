@@ -11,53 +11,15 @@ import {
 import { HeaderNav } from './HeaderNav';
 import { FooterNav } from './FooterNav';
 import { LessonsIcon, TargetIcon, ZapIcon, CheckIcon } from './icons/SvgIcons';
+import { getAllLessons, getLessonsByCategory } from '../data/lessonContent';
+import LessonViewer from './LessonViewer';
 
 const { width } = Dimensions.get('window');
 
 export const LessonsScreen = ({ activeTab, onTabPress, onProfilePress, onNotificationPress, onBack, onAction }) => {
   const [selectedCategory, setSelectedCategory] = useState('basics');
-  const [lessons] = useState([
-    {
-      id: 1,
-      title: 'How to Move Pieces',
-      category: 'basics',
-      duration: '5 min',
-      completed: true,
-      difficulty: 'Beginner',
-    },
-    {
-      id: 2,
-      title: 'Basic Checkmate Patterns',
-      category: 'basics',
-      duration: '10 min',
-      completed: true,
-      difficulty: 'Beginner',
-    },
-    {
-      id: 3,
-      title: 'Opening Principles',
-      category: 'openings',
-      duration: '15 min',
-      completed: false,
-      difficulty: 'Intermediate',
-    },
-    {
-      id: 4,
-      title: 'Tactical Patterns',
-      category: 'tactics',
-      duration: '12 min',
-      completed: false,
-      difficulty: 'Intermediate',
-    },
-    {
-      id: 5,
-      title: 'Endgame Fundamentals',
-      category: 'endgames',
-      duration: '20 min',
-      completed: false,
-      difficulty: 'Advanced',
-    },
-  ]);
+  const [currentLesson, setCurrentLesson] = useState(null);
+  const [lessons] = useState(getAllLessons());
 
   const categories = [
     { id: 'basics', name: 'Basics', icon: LessonsIcon },
@@ -67,7 +29,21 @@ export const LessonsScreen = ({ activeTab, onTabPress, onProfilePress, onNotific
   ];
 
   const handleLessonPress = (lesson) => {
-    console.log(`Starting lesson: ${lesson.title}`);
+    setCurrentLesson(lesson);
+  };
+
+  const handleLessonComplete = (lessonId) => {
+    // Update lesson completion status
+    const updatedLessons = lessons.map(lesson => 
+      lesson.id === lessonId ? { ...lesson, completed: true } : lesson
+    );
+    setCurrentLesson(null);
+    // In a real app, you would save this to storage
+    console.log(`Lesson ${lessonId} completed!`);
+  };
+
+  const handleBackFromLesson = () => {
+    setCurrentLesson(null);
   };
 
   const handlePuzzlesPress = () => {
@@ -81,7 +57,18 @@ export const LessonsScreen = ({ activeTab, onTabPress, onProfilePress, onNotific
     setSelectedCategory(categoryId);
   };
 
-  const filteredLessons = lessons.filter(lesson => lesson.category === selectedCategory);
+  const filteredLessons = getLessonsByCategory(selectedCategory);
+
+  // Show lesson viewer if a lesson is selected
+  if (currentLesson) {
+    return (
+      <LessonViewer
+        lesson={currentLesson}
+        onBack={handleBackFromLesson}
+        onComplete={handleLessonComplete}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
@@ -176,15 +163,21 @@ export const LessonsScreen = ({ activeTab, onTabPress, onProfilePress, onNotific
           <Text style={styles.sectionTitle}>Your Progress</Text>
           <View style={styles.progressCard}>
             <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>2</Text>
+              <Text style={styles.progressNumber}>
+                {lessons.filter(l => l.completed).length}
+              </Text>
               <Text style={styles.progressLabel}>Completed</Text>
             </View>
             <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>3</Text>
+              <Text style={styles.progressNumber}>
+                {lessons.filter(l => !l.completed).length}
+              </Text>
               <Text style={styles.progressLabel}>Remaining</Text>
             </View>
             <View style={styles.progressItem}>
-              <Text style={styles.progressNumber}>40%</Text>
+              <Text style={styles.progressNumber}>
+                {Math.round((lessons.filter(l => l.completed).length / lessons.length) * 100)}%
+              </Text>
               <Text style={styles.progressLabel}>Progress</Text>
             </View>
           </View>
@@ -193,13 +186,21 @@ export const LessonsScreen = ({ activeTab, onTabPress, onProfilePress, onNotific
         {/* Featured Lesson */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Featured Lesson</Text>
-          <TouchableOpacity style={styles.featuredCard}>
+          <TouchableOpacity 
+            style={styles.featuredCard}
+            onPress={() => {
+              const featuredLesson = lessons.find(l => l.id === 7); // Sicilian Defense
+              if (featuredLesson) {
+                setCurrentLesson(featuredLesson);
+              }
+            }}
+          >
             <View style={styles.featuredHeader}>
               <ZapIcon size={28} color="#f59e0b" />
-              <Text style={styles.featuredTitle}>Master the Queen's Gambit</Text>
+              <Text style={styles.featuredTitle}>Sicilian Defense</Text>
             </View>
             <Text style={styles.featuredDescription}>
-              Learn one of the most powerful opening systems in chess
+              Master Black's most popular response to 1.e4
             </Text>
             <View style={styles.featuredMeta}>
               <Text style={styles.featuredDuration}>25 min</Text>

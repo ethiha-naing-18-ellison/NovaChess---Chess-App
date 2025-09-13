@@ -12,8 +12,14 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
   const [selectedColor, setSelectedColor] = useState('white');
   const [gameMode, setGameMode] = useState(initialGameMode); // 'ai', 'online-friend', or 'local-friend'
   const [timerEnabled, setTimerEnabled] = useState(true);
-  const [timeControl, setTimeControl] = useState('10+0'); // 10 minutes + 0 increment
+  const [minutes, setMinutes] = useState(10);
+  const [increment, setIncrement] = useState(0);
   const [difficulty, setDifficulty] = useState('medium');
+  const [friendSelection, setFriendSelection] = useState('random'); // 'random' or 'select'
+  const [showOpponentPopup, setShowOpponentPopup] = useState(false);
+  const [showFriendListPopup, setShowFriendListPopup] = useState(false);
+  const [challengeTimer, setChallengeTimer] = useState(60); // 60 seconds
+  const [challengedFriendId, setChallengedFriendId] = useState(null); // Track which friend was challenged
 
   const timeControls = [
     { label: 'No Timer', value: 'none' },
@@ -32,17 +38,173 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
     { label: 'Expert', value: 'expert', description: 'Master level' },
   ];
 
+  // Mock data for online friends
+  const mockOpponent = {
+    name: 'ChessMaster2024',
+    rating: 1850,
+    country: '🇺🇸',
+    status: 'online'
+  };
+
+  const mockFriends = [
+    { id: 1, name: 'AlexChess', rating: 1650, country: '🇬🇧', status: 'online' },
+    { id: 2, name: 'QueenBee', rating: 1920, country: '🇩🇪', status: 'online' },
+    { id: 3, name: 'KnightRider', rating: 1780, country: '🇫🇷', status: 'away' },
+    { id: 4, name: 'PawnMaster', rating: 1450, country: '🇮🇹', status: 'online' },
+    { id: 5, name: 'KingSlayer', rating: 2100, country: '🇪🇸', status: 'online' },
+  ];
+
+  const userRating = 1750; // Mock user rating
+
   const handleStartGame = () => {
+    if (gameMode === 'online-friend') {
+      if (friendSelection === 'random') {
+        // Show opponent matching popup
+        setShowOpponentPopup(true);
+      } else {
+        // Show friend list popup
+        setShowFriendListPopup(true);
+      }
+      return;
+    }
+
+    // For AI and local friend modes, start game directly
+    const timeControlString = timerEnabled ? `${minutes}+${increment}` : 'none';
     const gameConfig = {
       playerColor: selectedColor,
       gameMode: gameMode,
-      timerEnabled: timerEnabled && timeControl !== 'none',
-      timeControl: timeControl,
+      timerEnabled: timerEnabled,
+      timeControl: timeControlString,
       difficulty: gameMode === 'ai' ? difficulty : null, // Only include difficulty for AI games
     };
 
     onStartGame(gameConfig);
   };
+
+  const handleOpponentMatchAccept = () => {
+    setShowOpponentPopup(false);
+    // Randomly assign color for online games
+    const randomColor = Math.random() < 0.5 ? 'white' : 'black';
+    const timeControlString = timerEnabled ? `${minutes}+${increment}` : 'none';
+    const gameConfig = {
+      playerColor: randomColor,
+      gameMode: gameMode,
+      timerEnabled: timerEnabled,
+      timeControl: timeControlString,
+      opponent: mockOpponent,
+    };
+    onStartGame(gameConfig);
+  };
+
+  const handleOpponentMatchCancel = () => {
+    setShowOpponentPopup(false);
+  };
+
+  const handleSendChallenge = (friend) => {
+    setChallengedFriendId(friend.id);
+    setChallengeTimer(60);
+    
+    // Start countdown timer
+    const timer = setInterval(() => {
+      setChallengeTimer((prev) => {
+        if (prev <= 1) {
+          clearInterval(timer);
+          setChallengedFriendId(null);
+          return 60;
+        }
+        return prev - 1;
+      });
+    }, 1000);
+  };
+
+  const handleFriendListCancel = () => {
+    setShowFriendListPopup(false);
+    setChallengedFriendId(null);
+    setChallengeTimer(60);
+  };
+
+  const renderOpponentMatchingPopup = () => (
+    <View style={styles.popupOverlay}>
+      <View style={styles.popupContainer}>
+        <Text style={styles.popupTitle}>Opponent Found!</Text>
+        
+        <View style={styles.opponentInfo}>
+          <Text style={styles.opponentName}>YOU vs {mockOpponent.name}</Text>
+          <View style={styles.ratingContainer}>
+            <View style={styles.ratingItem}>
+              <Text style={styles.ratingLabel}>Your Rating</Text>
+              <Text style={styles.ratingValue}>{userRating}</Text>
+            </View>
+            <View style={styles.ratingItem}>
+              <Text style={styles.ratingLabel}>Opponent Rating</Text>
+              <Text style={styles.ratingValue}>{mockOpponent.rating}</Text>
+            </View>
+          </View>
+          <Text style={styles.opponentCountry}>{mockOpponent.country} {mockOpponent.name}</Text>
+        </View>
+
+        <View style={styles.popupButtons}>
+          <TouchableOpacity
+            style={styles.popupButtonCancel}
+            onPress={handleOpponentMatchCancel}
+          >
+            <Text style={styles.popupButtonCancelText}>Cancel</Text>
+          </TouchableOpacity>
+          <TouchableOpacity
+            style={styles.popupButtonConfirm}
+            onPress={handleOpponentMatchAccept}
+          >
+            <Text style={styles.popupButtonConfirmText}>Okay</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
+
+  const renderFriendListPopup = () => (
+    <View style={styles.popupOverlay}>
+      <View style={styles.friendListPopupContainer}>
+        <Text style={styles.popupTitle}>Select Friend</Text>
+        
+        <ScrollView style={styles.friendList}>
+          {mockFriends.map((friend) => (
+            <View key={friend.id} style={styles.friendItem}>
+              <View style={styles.friendInfo}>
+                <Text style={styles.friendName}>{friend.name}</Text>
+                <Text style={styles.friendRating}>Rating: {friend.rating}</Text>
+                <Text style={styles.friendCountry}>{friend.country}</Text>
+                <View style={[
+                  styles.statusIndicator,
+                  { backgroundColor: friend.status === 'online' ? '#10b981' : '#f59e0b' }
+                ]} />
+              </View>
+              <TouchableOpacity
+                style={[
+                  styles.challengeButton,
+                  challengedFriendId && challengedFriendId !== friend.id && styles.challengeButtonDisabled
+                ]}
+                onPress={() => handleSendChallenge(friend)}
+                disabled={challengedFriendId !== null}
+              >
+                <Text style={styles.challengeButtonText}>
+                  {challengedFriendId === friend.id ? `${challengeTimer}s` : 'Send'}
+                </Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </ScrollView>
+
+        <View style={styles.popupButtons}>
+          <TouchableOpacity
+            style={styles.popupButtonCancel}
+            onPress={handleFriendListCancel}
+          >
+            <Text style={styles.popupButtonCancelText}>Cancel</Text>
+          </TouchableOpacity>
+        </View>
+      </View>
+    </View>
+  );
 
   const renderGameModeSelector = () => (
     <View style={styles.section}>
@@ -108,7 +270,62 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
     </View>
   );
 
-  const renderColorSelector = () => (
+  const renderFriendSelector = () => (
+    <View style={styles.section}>
+      <Text style={styles.sectionTitle}>Choose Friend Option</Text>
+      <View style={styles.friendSelector}>
+        <TouchableOpacity
+          style={[
+            styles.friendOption,
+            friendSelection === 'random' && styles.selectedFriend,
+          ]}
+          onPress={() => setFriendSelection('random')}
+        >
+          <Text style={styles.friendEmoji}>🎲</Text>
+          <View style={styles.friendTextContainer}>
+            <Text style={[
+              styles.friendText,
+              friendSelection === 'random' && styles.selectedFriendText,
+            ]}>
+              Random Friend
+            </Text>
+            <Text style={styles.friendDescription}>
+              Play with a random online opponent
+            </Text>
+          </View>
+        </TouchableOpacity>
+
+        <TouchableOpacity
+          style={[
+            styles.friendOption,
+            friendSelection === 'select' && styles.selectedFriend,
+          ]}
+          onPress={() => setFriendSelection('select')}
+        >
+          <Text style={styles.friendEmoji}>👥</Text>
+          <View style={styles.friendTextContainer}>
+            <Text style={[
+              styles.friendText,
+              friendSelection === 'select' && styles.selectedFriendText,
+            ]}>
+              Select Friend
+            </Text>
+            <Text style={styles.friendDescription}>
+              Choose from your friends list
+            </Text>
+          </View>
+        </TouchableOpacity>
+      </View>
+    </View>
+  );
+
+  const renderColorSelector = () => {
+    // Don't show color selector for online friend mode
+    if (gameMode === 'online-friend') {
+      return null;
+    }
+
+    return (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Choose Your Color</Text>
       <View style={styles.colorSelector}>
@@ -147,54 +364,73 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
         </TouchableOpacity>
       </View>
     </View>
-  );
+    );
+  };
 
   const renderTimerSelector = () => (
     <View style={styles.section}>
       <Text style={styles.sectionTitle}>Timer Settings</Text>
-      <View style={styles.timerToggle}>
-        <TouchableOpacity
-          style={[
-            styles.toggleButton,
-            timerEnabled && styles.toggleButtonActive,
-          ]}
-          onPress={() => setTimerEnabled(!timerEnabled)}
-        >
-          <Text style={[
-            styles.toggleButtonText,
-            timerEnabled && styles.toggleButtonTextActive,
-          ]}>
-            {timerEnabled ? 'Timer ON' : 'Timer OFF'}
-          </Text>
-        </TouchableOpacity>
-      </View>
-
-      {timerEnabled && (
-        <View style={styles.timeControlSelector}>
-          <Text style={styles.subsectionTitle}>Time Control</Text>
-          <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-            <View style={styles.timeControlOptions}>
-              {timeControls.map((control) => (
-                <TouchableOpacity
-                  key={control.value}
-                  style={[
-                    styles.timeControlOption,
-                    timeControl === control.value && styles.selectedTimeControl,
-                  ]}
-                  onPress={() => setTimeControl(control.value)}
-                >
-                  <Text style={[
-                    styles.timeControlText,
-                    timeControl === control.value && styles.selectedTimeControlText,
-                  ]}>
-                    {control.label}
-                  </Text>
-                </TouchableOpacity>
-              ))}
-            </View>
-          </ScrollView>
+      <View style={styles.timerContainer}>
+        <View style={styles.timerToggleRow}>
+          <Text style={styles.timerLabel}>Timer:</Text>
+          <TouchableOpacity
+            style={[
+              styles.toggleButton,
+              timerEnabled && styles.toggleButtonActive,
+            ]}
+            onPress={() => setTimerEnabled(!timerEnabled)}
+          >
+            <Text style={[
+              styles.toggleButtonText,
+              timerEnabled && styles.toggleButtonTextActive,
+            ]}>
+              {timerEnabled ? 'ON' : 'OFF'}
+            </Text>
+          </TouchableOpacity>
         </View>
-      )}
+
+        {timerEnabled && (
+          <View style={styles.timeControlRow}>
+            <View style={styles.timeControlItem}>
+              <Text style={styles.timeControlLabel}>Time Limit:</Text>
+              <View style={styles.timeControlButtons}>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => setMinutes(Math.max(1, minutes - 1))}
+                >
+                  <Text style={styles.timeButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.timeValue}>{minutes}</Text>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => setMinutes(Math.min(60, minutes + 1))}
+                >
+                  <Text style={styles.timeButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+
+            <View style={styles.timeControlItem}>
+              <Text style={styles.timeControlLabel}>Increment:</Text>
+              <View style={styles.timeControlButtons}>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => setIncrement(Math.max(0, increment - 1))}
+                >
+                  <Text style={styles.timeButtonText}>-</Text>
+                </TouchableOpacity>
+                <Text style={styles.timeValue}>{increment}</Text>
+                <TouchableOpacity
+                  style={styles.timeButton}
+                  onPress={() => setIncrement(Math.min(30, increment + 1))}
+                >
+                  <Text style={styles.timeButtonText}>+</Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        )}
+      </View>
     </View>
   );
 
@@ -248,6 +484,7 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
         {renderGameModeSelector()}
+        {gameMode === 'online-friend' && renderFriendSelector()}
         {renderColorSelector()}
         {renderTimerSelector()}
         {renderDifficultySelector()}
@@ -267,7 +504,7 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
             </Text>
             <Text style={styles.previewText}>
               <Text style={styles.previewLabel}>Timer: </Text>
-              {timerEnabled && timeControl !== 'none' ? timeControls.find(tc => tc.value === timeControl)?.label : 'No Timer'}
+              {timerEnabled ? `${minutes}+${increment} (${minutes} min + ${increment}s)` : 'No Timer'}
             </Text>
             {gameMode === 'ai' && (
               <Text style={styles.previewText}>
@@ -284,6 +521,10 @@ const GameSetupScreen = ({ onStartGame, onBack, initialGameMode = 'ai' }) => {
           <Text style={styles.startButtonText}>Start Game</Text>
         </TouchableOpacity>
       </View>
+
+      {/* Popups */}
+      {showOpponentPopup && renderOpponentMatchingPopup()}
+      {showFriendListPopup && renderFriendListPopup()}
     </View>
   );
 };
@@ -414,16 +655,28 @@ const styles = StyleSheet.create({
     fontSize: 10,
     textAlign: 'right',
   },
-  timerToggle: {
+  timerContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 8,
+    padding: 12,
+  },
+  timerToggleRow: {
+    flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 15,
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  timerLabel: {
+    color: '#cccccc',
+    fontSize: 14,
+    fontWeight: '600',
   },
   toggleButton: {
-    paddingHorizontal: 24,
-    paddingVertical: 10,
-    backgroundColor: '#2a2a2a',
-    borderRadius: 20,
-    borderWidth: 2,
+    paddingHorizontal: 16,
+    paddingVertical: 6,
+    backgroundColor: '#1a1a2e',
+    borderRadius: 16,
+    borderWidth: 1,
     borderColor: '#666666',
   },
   toggleButtonActive: {
@@ -432,39 +685,52 @@ const styles = StyleSheet.create({
   },
   toggleButtonText: {
     color: '#cccccc',
-    fontSize: 16,
+    fontSize: 12,
     fontWeight: '600',
   },
   toggleButtonTextActive: {
     color: '#ffffff',
   },
-  timeControlSelector: {
-    marginTop: 15,
-  },
-  timeControlOptions: {
+  timeControlRow: {
     flexDirection: 'row',
-    paddingVertical: 10,
+    justifyContent: 'space-between',
+    gap: 16,
   },
-  timeControlOption: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    marginRight: 8,
-    backgroundColor: '#2a2a2a',
+  timeControlItem: {
+    flex: 1,
+    alignItems: 'center',
+  },
+  timeControlLabel: {
+    color: '#888888',
+    fontSize: 12,
+    marginBottom: 8,
+  },
+  timeControlButtons: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+  },
+  timeButton: {
+    width: 32,
+    height: 32,
+    backgroundColor: '#1a1a2e',
     borderRadius: 16,
     borderWidth: 1,
-    borderColor: '#666666',
-  },
-  selectedTimeControl: {
-    backgroundColor: '#6b46c1',
     borderColor: '#6b46c1',
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  timeControlText: {
-    color: '#cccccc',
-    fontSize: 14,
-    fontWeight: '500',
+  timeButtonText: {
+    color: '#6b46c1',
+    fontSize: 16,
+    fontWeight: 'bold',
   },
-  selectedTimeControlText: {
+  timeValue: {
     color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    minWidth: 24,
+    textAlign: 'center',
   },
   difficultySelector: {
     flexDirection: 'row',
@@ -535,6 +801,196 @@ const styles = StyleSheet.create({
     color: '#ffffff',
     fontSize: 18,
     fontWeight: 'bold',
+  },
+  // Friend selector styles
+  friendSelector: {
+    flexDirection: 'column',
+    gap: 12,
+  },
+  friendOption: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#2a2a2a',
+    padding: 16,
+    borderRadius: 8,
+    borderWidth: 2,
+    borderColor: '#444444',
+  },
+  selectedFriend: {
+    borderColor: '#6b46c1',
+    backgroundColor: '#2a1a3a',
+  },
+  friendEmoji: {
+    fontSize: 24,
+    marginRight: 12,
+  },
+  friendTextContainer: {
+    flex: 1,
+  },
+  friendText: {
+    color: '#cccccc',
+    fontSize: 16,
+    fontWeight: '600',
+    marginBottom: 4,
+  },
+  selectedFriendText: {
+    color: '#ffffff',
+  },
+  friendDescription: {
+    color: '#888888',
+    fontSize: 12,
+  },
+  // Popup styles
+  popupOverlay: {
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    zIndex: 1000,
+  },
+  popupContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 300,
+    maxWidth: 400,
+  },
+  friendListPopupContainer: {
+    backgroundColor: '#2a2a2a',
+    borderRadius: 12,
+    padding: 24,
+    margin: 20,
+    minWidth: 350,
+    maxWidth: 400,
+    maxHeight: '80%',
+  },
+  popupTitle: {
+    color: '#ffffff',
+    fontSize: 20,
+    fontWeight: 'bold',
+    textAlign: 'center',
+    marginBottom: 20,
+  },
+  opponentInfo: {
+    alignItems: 'center',
+    marginBottom: 24,
+  },
+  opponentName: {
+    color: '#6b46c1',
+    fontSize: 18,
+    fontWeight: 'bold',
+    marginBottom: 16,
+  },
+  ratingContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-around',
+    width: '100%',
+    marginBottom: 12,
+  },
+  ratingItem: {
+    alignItems: 'center',
+  },
+  ratingLabel: {
+    color: '#888888',
+    fontSize: 12,
+    marginBottom: 4,
+  },
+  ratingValue: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  opponentCountry: {
+    color: '#cccccc',
+    fontSize: 14,
+  },
+  popupButtons: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    gap: 12,
+  },
+  popupButtonCancel: {
+    flex: 1,
+    backgroundColor: '#444444',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  popupButtonCancelText: {
+    color: '#cccccc',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  popupButtonConfirm: {
+    flex: 1,
+    backgroundColor: '#6b46c1',
+    paddingVertical: 12,
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  popupButtonConfirmText: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+  },
+  // Friend list styles
+  friendList: {
+    maxHeight: 300,
+    marginBottom: 20,
+  },
+  friendItem: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    backgroundColor: '#1a1a2e',
+    padding: 12,
+    borderRadius: 8,
+    marginBottom: 8,
+  },
+  friendInfo: {
+    flex: 1,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  friendName: {
+    color: '#ffffff',
+    fontSize: 16,
+    fontWeight: '600',
+    marginRight: 8,
+  },
+  friendRating: {
+    color: '#888888',
+    fontSize: 12,
+    marginRight: 8,
+  },
+  friendCountry: {
+    color: '#cccccc',
+    fontSize: 14,
+    marginRight: 8,
+  },
+  statusIndicator: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+  },
+  challengeButton: {
+    backgroundColor: '#6b46c1',
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    borderRadius: 6,
+  },
+  challengeButtonDisabled: {
+    backgroundColor: '#444444',
+  },
+  challengeButtonText: {
+    color: '#ffffff',
+    fontSize: 12,
+    fontWeight: '600',
   },
 });
 

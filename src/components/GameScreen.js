@@ -229,6 +229,7 @@ export const GameScreen = ({
               pieceStyle={pieceStyle}
               pieceType={pieceType}
               boardSize={boardSize}
+              playerColor={gameConfig?.playerColor}
             />
           </View>
         </View>
