@@ -33,7 +33,8 @@ export const GameScreen = ({
   onNewGame,
   onUndo,
   onSettings,
-  customization
+  customization,
+  gameConfig
 }) => {
   const [showMoveHistory, setShowMoveHistory] = useState(false);
 
@@ -199,17 +200,19 @@ export const GameScreen = ({
             </View>
           </View>
           
-          {/* Timer Display */}
-          <View style={styles.timerContainer}>
-            <View style={dynamicStyles.timer}>
-              <Text style={dynamicStyles.timerLabel}>White</Text>
-              <Text style={dynamicStyles.timerText}>{whiteTime}</Text>
+          {/* Timer Display - Only show if timer is enabled */}
+          {gameConfig?.timerEnabled && gameConfig?.timeControl !== 'none' && (
+            <View style={styles.timerContainer}>
+              <View style={dynamicStyles.timer}>
+                <Text style={dynamicStyles.timerLabel}>White</Text>
+                <Text style={dynamicStyles.timerText}>{whiteTime}</Text>
+              </View>
+              <View style={dynamicStyles.timer}>
+                <Text style={dynamicStyles.timerLabel}>Black</Text>
+                <Text style={dynamicStyles.timerText}>{blackTime}</Text>
+              </View>
             </View>
-            <View style={dynamicStyles.timer}>
-              <Text style={dynamicStyles.timerLabel}>Black</Text>
-              <Text style={dynamicStyles.timerText}>{blackTime}</Text>
-            </View>
-          </View>
+          )}
         </View>
 
         {/* Chess Board */}

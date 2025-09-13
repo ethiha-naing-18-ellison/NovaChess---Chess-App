@@ -18,8 +18,11 @@ import { LessonsScreen } from './src/components/LessonsScreen.js';
 import { RecentGamesScreen } from './src/components/RecentGamesScreen.js';
 import { CustomizeScreen } from './src/components/CustomizeScreen.js';
 import { GameScreen } from './src/components/GameScreen.js';
+import GameSetupScreen from './src/components/GameSetupScreen.js';
+import ConfirmationModal from './src/components/ConfirmationModal.js';
 import { SCREENS, NavigationManager } from './src/utils/navigationUtils.js';
 import { loadCustomization, DEFAULT_CUSTOMIZATION } from './src/utils/customizationUtils.js';
+import { saveGameToHistory, GameResult, GameMode } from './src/utils/gameHistoryUtils.js';
 
 export default function App() {
   // Navigation state
@@ -28,6 +31,15 @@ export default function App() {
   
   // Customization state
   const [customization, setCustomization] = useState(DEFAULT_CUSTOMIZATION);
+  
+  // Game configuration state
+  const [gameConfig, setGameConfig] = useState({
+    playerColor: 'white',
+    gameMode: 'ai',
+    timerEnabled: true,
+    timeControl: '10+0',
+    difficulty: 'medium',
+  });
   
   // Game state
   const [chessEngine] = useState(() => new ChessEngine());
@@ -42,6 +54,15 @@ export default function App() {
   const [whiteTime, setWhiteTime] = useState(600); // 10 minutes
   const [blackTime, setBlackTime] = useState(600); // 10 minutes
   const timerRef = useRef(null);
+  
+  // Confirmation modal state
+  const [showConfirmationModal, setShowConfirmationModal] = useState(false);
+  const [confirmationConfig, setConfirmationConfig] = useState({});
+  
+  // Game tracking state
+  const [gameStartTime, setGameStartTime] = useState(null);
+  const [gameMoveCount, setGameMoveCount] = useState(0);
+  const [gameAbandoned, setGameAbandoned] = useState(false);
 
   // Navigation handlers
   const handleLoadingComplete = async () => {
@@ -68,6 +89,44 @@ export default function App() {
 
   // Navigation handlers for tabs
   const handleTabPress = async (tabId) => {
+    // Check if user is currently in a game and trying to leave
+    if (currentScreen === SCREENS.GAME && tabId !== 'play') {
+      setConfirmationConfig({
+        title: 'Leave Game?',
+        message: 'Are you sure you want to leave the current game? Your progress will be lost and recorded as abandoned.',
+        confirmText: 'Leave Game',
+        cancelText: 'Cancel',
+        confirmButtonStyle: 'destructive',
+        onConfirm: async () => {
+          setShowConfirmationModal(false);
+          let targetScreen = SCREENS.HOME;
+          switch (tabId) {
+            case 'home':
+              targetScreen = SCREENS.HOME;
+              break;
+            case 'learn':
+              targetScreen = SCREENS.LESSONS;
+              break;
+            case 'customize':
+              targetScreen = SCREENS.CUSTOMIZE;
+              break;
+            case 'profile':
+              targetScreen = SCREENS.PROFILE;
+              break;
+            default:
+              targetScreen = SCREENS.HOME;
+              break;
+          }
+          await handleGameAbandonment(targetScreen, tabId);
+        },
+        onCancel: () => {
+          setShowConfirmationModal(false);
+        }
+      });
+      setShowConfirmationModal(true);
+      return;
+    }
+
     setActiveTab(tabId);
     switch (tabId) {
       case 'home':
@@ -76,8 +135,7 @@ export default function App() {
       case 'play':
         // Reload customizations before going to play page
         await reloadCustomizations();
-        setCurrentScreen(SCREENS.GAME);
-        startTimer();
+        setCurrentScreen(SCREENS.GAME_SETUP);
         break;
       case 'learn':
         // Default to lessons when learn tab is pressed
@@ -102,8 +160,7 @@ export default function App() {
       case 'new-game':
         // Reload customizations before starting new game
         await reloadCustomizations();
-        setCurrentScreen(SCREENS.GAME);
-        startTimer();
+        setCurrentScreen(SCREENS.GAME_SETUP);
         break;
       case 'puzzles':
         setCurrentScreen(SCREENS.PUZZLES);
@@ -126,11 +183,122 @@ export default function App() {
   };
 
   const handleProfilePress = () => {
+    // Check if user is currently in a game
+    if (currentScreen === SCREENS.GAME) {
+      setConfirmationConfig({
+        title: 'Leave Game?',
+        message: 'Are you sure you want to leave the current game? Your progress will be lost and recorded as abandoned.',
+        confirmText: 'Leave Game',
+        cancelText: 'Cancel',
+        confirmButtonStyle: 'destructive',
+        onConfirm: async () => {
+          setShowConfirmationModal(false);
+          await handleGameAbandonment(SCREENS.PROFILE);
+        },
+        onCancel: () => {
+          setShowConfirmationModal(false);
+        }
+      });
+      setShowConfirmationModal(true);
+      return;
+    }
     setCurrentScreen(SCREENS.PROFILE);
   };
 
   const handleNotificationPress = () => {
+    // Check if user is currently in a game
+    if (currentScreen === SCREENS.GAME) {
+      setConfirmationConfig({
+        title: 'Leave Game?',
+        message: 'Are you sure you want to leave the current game? Your progress will be lost and recorded as abandoned.',
+        confirmText: 'Leave Game',
+        cancelText: 'Cancel',
+        confirmButtonStyle: 'destructive',
+        onConfirm: async () => {
+          setShowConfirmationModal(false);
+          await handleGameAbandonment(SCREENS.HOME);
+          Alert.alert('Notifications', 'No new notifications');
+        },
+        onCancel: () => {
+          setShowConfirmationModal(false);
+        }
+      });
+      setShowConfirmationModal(true);
+      return;
+    }
     Alert.alert('Notifications', 'No new notifications');
+  };
+
+  // Game setup handlers
+  const handleGameSetupStart = (config) => {
+    setGameConfig(config);
+    setCurrentScreen(SCREENS.GAME);
+    
+    // Initialize game tracking
+    setGameStartTime(new Date().toISOString());
+    setGameMoveCount(0);
+    setGameAbandoned(false);
+    
+    // Initialize timer based on configuration
+    if (config.timerEnabled && config.timeControl !== 'none') {
+      const [minutes, increment] = config.timeControl.split('+').map(Number);
+      const totalSeconds = minutes * 60;
+      setWhiteTime(totalSeconds);
+      setBlackTime(totalSeconds);
+      startTimer();
+    } else {
+      // No timer - set to a large number to disable timer display
+      setWhiteTime(999999);
+      setBlackTime(999999);
+    }
+  };
+
+  const handleGameSetupBack = () => {
+    setCurrentScreen(SCREENS.HOME);
+  };
+
+  // Handle game abandonment
+  const handleGameAbandonment = async (targetScreen, targetTab = null) => {
+    if (gameStartTime && !gameAbandoned) {
+      setGameAbandoned(true); // Prevent multiple saves
+      // Record the abandoned game
+      await saveGameToHistory({
+        result: GameResult.ABANDONED,
+        mode: gameConfig.gameMode === 'ai' ? GameMode.VS_AI : GameMode.VS_HUMAN,
+        playerColor: gameConfig.playerColor,
+        difficulty: gameConfig.difficulty,
+        timerEnabled: gameConfig.timerEnabled,
+        timeControl: gameConfig.timeControl,
+        moveCount: gameMoveCount,
+        duration: new Date().toISOString(),
+        startTime: gameStartTime,
+        endTime: new Date().toISOString(),
+        reason: 'User left game',
+      });
+    }
+    
+    // Reset game state
+    chessEngine.resetGame();
+    setSelectedSquare(null);
+    setPossibleMoves([]);
+    setGameState(GAME_STATES.PLAYING);
+    setCurrentPlayer(PIECE_COLORS.WHITE);
+    setIsInCheck(false);
+    setMoveHistory([]);
+    setGameStartTime(null);
+    setGameMoveCount(0);
+    setGameAbandoned(false);
+    
+    // Clear timer
+    if (timerRef.current) {
+      clearInterval(timerRef.current);
+    }
+    
+    // Navigate to target
+    if (targetTab) {
+      setActiveTab(targetTab);
+    }
+    setCurrentScreen(targetScreen);
   };
 
   // Navigation handlers for profile page actions
@@ -202,6 +370,11 @@ export default function App() {
       clearInterval(timerRef.current);
     }
 
+    // Only start timer if it's enabled in game config
+    if (!gameConfig.timerEnabled || gameConfig.timeControl === 'none') {
+      return;
+    }
+
     timerRef.current = setInterval(() => {
       if (currentPlayer === PIECE_COLORS.WHITE) {
         setWhiteTime(prev => {
@@ -245,6 +418,7 @@ export default function App() {
       setGameState(chessEngine.gameState);
       setIsInCheck(chessEngine.isInCheck);
       setMoveHistory([...chessEngine.moveHistory]);
+      setGameMoveCount(prev => prev + 1);
       
       // Check for game end conditions
       if (chessEngine.gameState === GAME_STATES.CHECKMATE) {
@@ -275,13 +449,13 @@ export default function App() {
     setCurrentPlayer(PIECE_COLORS.WHITE);
     setIsInCheck(false);
     setMoveHistory([]);
-    setWhiteTime(600);
-    setBlackTime(600);
     
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    startTimer();
+    
+    // Go back to game setup instead of starting a new game immediately
+    setCurrentScreen(SCREENS.GAME_SETUP);
   };
 
   const handleUndo = () => {
@@ -399,6 +573,14 @@ export default function App() {
           />
         );
       
+      case SCREENS.GAME_SETUP:
+        return (
+          <GameSetupScreen
+            onStartGame={handleGameSetupStart}
+            onBack={handleGameSetupBack}
+          />
+        );
+      
       case SCREENS.GAME:
         return (
           <GameScreen
@@ -414,13 +596,14 @@ export default function App() {
             kingPosition={getKingPosition()}
             currentPlayer={currentPlayer}
             gameState={gameState}
-            whiteTime={ChessUtils.formatTime(whiteTime)}
-            blackTime={ChessUtils.formatTime(blackTime)}
+            whiteTime={gameConfig.timerEnabled && gameConfig.timeControl !== 'none' ? ChessUtils.formatTime(whiteTime) : null}
+            blackTime={gameConfig.timerEnabled && gameConfig.timeControl !== 'none' ? ChessUtils.formatTime(blackTime) : null}
             moveHistory={moveHistory}
             onNewGame={handleNewGame}
             onUndo={handleUndo}
             onSettings={handleSettings}
             customization={customization}
+            gameConfig={gameConfig}
           />
         );
       
@@ -429,5 +612,19 @@ export default function App() {
     }
   };
 
-  return renderScreen();
+  return (
+    <>
+      {renderScreen()}
+      <ConfirmationModal
+        visible={showConfirmationModal}
+        title={confirmationConfig.title}
+        message={confirmationConfig.message}
+        confirmText={confirmationConfig.confirmText}
+        cancelText={confirmationConfig.cancelText}
+        confirmButtonStyle={confirmationConfig.confirmButtonStyle}
+        onConfirm={confirmationConfig.onConfirm}
+        onCancel={confirmationConfig.onCancel}
+      />
+    </>
+  );
 }

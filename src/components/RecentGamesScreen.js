@@ -1,5 +1,5 @@
 // NovaChess - Recent Games Screen Component
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -11,68 +11,77 @@ import {
 import { HeaderNav } from './HeaderNav';
 import { FooterNav } from './FooterNav';
 import { GameIcon, CheckIcon, XIcon, TargetIcon } from './icons/SvgIcons';
+import { getGameHistory, formatGameResult, formatGameMode, formatGameDuration } from '../utils/gameHistoryUtils';
 
 const { width } = Dimensions.get('window');
 
 export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNotificationPress, onBack }) => {
   const [selectedFilter, setSelectedFilter] = useState('all');
-  const [recentGames] = useState([
-    {
-      id: 1,
-      opponent: 'AI (Medium)',
-      result: 'Win',
-      date: '2 hours ago',
-      moves: 42,
-      time: '15:32',
-      timeControl: '10+0',
-      rating: 1250,
-    },
-    {
-      id: 2,
-      opponent: 'AI (Hard)',
-      result: 'Loss',
-      date: '1 day ago',
-      moves: 28,
-      time: '8:45',
-      timeControl: '5+0',
-      rating: 1240,
-    },
-    {
-      id: 3,
-      opponent: 'Friend',
-      result: 'Draw',
-      date: '3 days ago',
-      moves: 56,
-      time: '22:15',
-      timeControl: '15+10',
-      rating: 1250,
-    },
-    {
-      id: 4,
-      opponent: 'AI (Easy)',
-      result: 'Win',
-      date: '1 week ago',
-      moves: 35,
-      time: '12:20',
-      timeControl: '10+0',
-      rating: 1230,
-    },
-    {
-      id: 5,
-      opponent: 'AI (Medium)',
-      result: 'Loss',
-      date: '1 week ago',
-      moves: 31,
-      time: '18:45',
-      timeControl: '10+0',
-      rating: 1220,
-    },
-  ]);
+  const [recentGames, setRecentGames] = useState([]);
+  const [loading, setLoading] = useState(true);
 
-  const filters = ['all', 'wins', 'losses', 'draws'];
+  // Load game history on component mount
+  useEffect(() => {
+    loadGameHistory();
+  }, []);
+
+  const loadGameHistory = async () => {
+    try {
+      setLoading(true);
+      const history = await getGameHistory();
+      
+      // Transform history data to match the expected format
+      const transformedGames = history.map(game => ({
+        id: game.id,
+        opponent: game.mode === 'vs_ai' 
+          ? `${formatGameMode(game.mode)} (${game.difficulty || 'Unknown'})`
+          : formatGameMode(game.mode),
+        result: formatGameResult(game.result),
+        date: formatDate(game.timestamp),
+        moves: game.moveCount || 0,
+        time: formatGameDuration(game.startTime, game.endTime),
+        timeControl: game.timeControl || 'No Timer',
+        rating: 1250, // Default rating for now
+        playerColor: game.playerColor,
+        timerEnabled: game.timerEnabled,
+        reason: game.reason,
+        gameMode: game.mode,
+        difficulty: game.difficulty,
+        originalData: game, // Keep original data for reference
+      }));
+      
+      setRecentGames(transformedGames);
+    } catch (error) {
+      console.error('Error loading game history:', error);
+      setRecentGames([]);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const formatDate = (timestamp) => {
+    const date = new Date(timestamp);
+    const now = new Date();
+    const diffInHours = Math.floor((now - date) / (1000 * 60 * 60));
+    
+    if (diffInHours < 1) {
+      return 'Just now';
+    } else if (diffInHours < 24) {
+      return `${diffInHours} hour${diffInHours > 1 ? 's' : ''} ago`;
+    } else {
+      const diffInDays = Math.floor(diffInHours / 24);
+      return `${diffInDays} day${diffInDays > 1 ? 's' : ''} ago`;
+    }
+  };
+
+  const filters = ['all', 'wins', 'losses', 'draws', 'abandoned'];
 
   const handleGamePress = (game) => {
-    console.log(`Viewing game: ${game.opponent}`);
+    console.log(`Viewing game: ${game.opponent}`, game.originalData);
+  };
+
+  const handleRefresh = () => {
+    loadGameHistory();
   };
 
   const handleFilterChange = (filter) => {
@@ -81,9 +90,21 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
 
   const getFilteredGames = () => {
     if (selectedFilter === 'all') return recentGames;
-    return recentGames.filter(game => 
-      game.result.toLowerCase() === selectedFilter.slice(0, -1) // Remove 's' from wins/losses
-    );
+    return recentGames.filter(game => {
+      const result = game.result.toLowerCase();
+      switch (selectedFilter) {
+        case 'wins':
+          return result === 'win';
+        case 'losses':
+          return result === 'loss';
+        case 'draws':
+          return result === 'draw';
+        case 'abandoned':
+          return result === 'abandoned';
+        default:
+          return true;
+      }
+    });
   };
 
   const getResultIcon = (result) => {
@@ -94,6 +115,8 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
         return <XIcon size={16} color="#ef4444" />;
       case 'Draw':
         return <TargetIcon size={16} color="#6b7280" />;
+      case 'Abandoned':
+        return <XIcon size={16} color="#8b5cf6" />;
       default:
         return null;
     }
@@ -107,6 +130,8 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
         return '#ef4444';
       case 'Draw':
         return '#6b7280';
+      case 'Abandoned':
+        return '#8b5cf6';
       default:
         return '#94a3b8';
     }
@@ -119,6 +144,13 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
         onProfilePress={onProfilePress}
         onNotificationPress={onNotificationPress}
       />
+      
+      {/* Refresh Button */}
+      <View style={styles.refreshContainer}>
+        <TouchableOpacity style={styles.refreshButton} onPress={handleRefresh}>
+          <Text style={styles.refreshButtonText}>🔄 Refresh</Text>
+        </TouchableOpacity>
+      </View>
       
       {/* Back Button */}
       <View style={styles.backButtonContainer}>
@@ -156,7 +188,22 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
           <Text style={styles.sectionTitle}>
             {selectedFilter === 'all' ? 'All Games' : `${selectedFilter.charAt(0).toUpperCase() + selectedFilter.slice(1)}`}
           </Text>
-          {getFilteredGames().map((game) => (
+          
+          {loading ? (
+            <View style={styles.loadingContainer}>
+              <Text style={styles.loadingText}>Loading games...</Text>
+            </View>
+          ) : getFilteredGames().length === 0 ? (
+            <View style={styles.emptyContainer}>
+              <Text style={styles.emptyText}>No games found</Text>
+              <Text style={styles.emptySubtext}>
+                {selectedFilter === 'all' 
+                  ? 'Start playing to see your game history here!' 
+                  : `No ${selectedFilter} games found.`}
+              </Text>
+            </View>
+          ) : (
+            getFilteredGames().map((game) => (
             <TouchableOpacity
               key={game.id}
               style={styles.gameCard}
@@ -191,13 +238,20 @@ export const RecentGamesScreen = ({ activeTab, onTabPress, onProfilePress, onNot
                   <Text style={styles.detailLabel}>Control:</Text>
                   <Text style={styles.detailValue}>{game.timeControl}</Text>
                 </View>
+                {game.gameMode === 'vs_ai' && game.difficulty && (
+                  <View style={styles.detailItem}>
+                    <Text style={styles.detailLabel}>Difficulty:</Text>
+                    <Text style={styles.detailValue}>{game.difficulty.charAt(0).toUpperCase() + game.difficulty.slice(1)}</Text>
+                  </View>
+                )}
                 <View style={styles.detailItem}>
                   <Text style={styles.detailLabel}>Rating:</Text>
                   <Text style={styles.detailValue}>{game.rating}</Text>
                 </View>
               </View>
             </TouchableOpacity>
-          ))}
+            ))
+          )}
         </View>
 
         {/* Statistics Summary */}
@@ -383,5 +437,47 @@ const styles = StyleSheet.create({
     color: '#6b46c1',
     fontSize: 14,
     fontWeight: '600',
+  },
+  refreshContainer: {
+    paddingHorizontal: 20,
+    paddingVertical: 10,
+    backgroundColor: '#0f0f1a',
+  },
+  refreshButton: {
+    backgroundColor: '#1a1a2e',
+    borderRadius: 8,
+    paddingVertical: 8,
+    paddingHorizontal: 16,
+    borderWidth: 1,
+    borderColor: '#4CAF50',
+    alignSelf: 'flex-end',
+  },
+  refreshButtonText: {
+    color: '#4CAF50',
+    fontSize: 14,
+    fontWeight: '600',
+  },
+  loadingContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  loadingText: {
+    color: '#94a3b8',
+    fontSize: 16,
+  },
+  emptyContainer: {
+    padding: 40,
+    alignItems: 'center',
+  },
+  emptyText: {
+    color: '#e2e8f0',
+    fontSize: 18,
+    fontWeight: '600',
+    marginBottom: 8,
+  },
+  emptySubtext: {
+    color: '#94a3b8',
+    fontSize: 14,
+    textAlign: 'center',
   },
 });

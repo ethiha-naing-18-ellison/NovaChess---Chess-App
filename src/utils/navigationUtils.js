@@ -5,6 +5,7 @@ export const SCREENS = {
   AUTH: 'auth',
   HOME: 'home',
   PROFILE: 'profile',
+  GAME_SETUP: 'game_setup',
   GAME: 'game',
   PUZZLES: 'puzzles',
   ANALYSIS: 'analysis',
@@ -48,8 +49,10 @@ export const NavigationManager = {
         return SCREENS.AUTH;
       case SCREENS.PROFILE:
         return SCREENS.HOME;
-      case SCREENS.GAME:
+      case SCREENS.GAME_SETUP:
         return SCREENS.HOME;
+      case SCREENS.GAME:
+        return SCREENS.GAME_SETUP;
       default:
         return null;
     }
