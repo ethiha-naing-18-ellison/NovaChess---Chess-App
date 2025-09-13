@@ -4,11 +4,11 @@
     "slug": "law-go",
     "version": "1.0.0",
     "orientation": "portrait",
-    "icon": "./assets/icon.png",
+    "icon": "./assets/applicationlogo.png",
     "userInterfaceStyle": "light",
     "sdkVersion": "54.0.0",
     "splash": {
-      "image": "./assets/splash-icon.png",
+      "image": "./assets/applicationlogo.png",
       "resizeMode": "contain",
       "backgroundColor": "#ffffff"
     },
@@ -17,13 +17,13 @@
     },
     "android": {
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/applicationlogo.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.thiha1843.lawgo"
     },
     "web": {
-      "favicon": "./assets/favicon.png"
+      "favicon": "./assets/applicationlogo.png"
     },
     "extra": {
       "eas": {
