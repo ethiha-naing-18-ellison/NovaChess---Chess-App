@@ -243,6 +243,17 @@ export const saveCustomization = async (customization) => {
 // Load customization settings
 export const loadCustomization = async () => {
   try {
+    // Check version to force reset on updates
+    const currentVersion = '2.0.0'; // Update this when making UI changes
+    const savedVersion = await AsyncStorage.getItem('chess_version');
+    
+    if (savedVersion !== currentVersion) {
+      // Version mismatch - reset customization
+      await AsyncStorage.setItem('chess_version', currentVersion);
+      await resetCustomization();
+      return DEFAULT_CUSTOMIZATION;
+    }
+    
     const saved = await AsyncStorage.getItem('chess_customization');
     if (saved) {
       return { ...DEFAULT_CUSTOMIZATION, ...JSON.parse(saved) };

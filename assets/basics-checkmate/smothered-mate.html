@@ -1,0 +1,100 @@
+﻿<!DOCTYPE html>
+<html>
+<head>
+    <title>smothered-mate</title>
+    <style>
+        body { margin: 0; padding: 20px; background: white; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        svg { width: 400px; height: 400px; border: 2px solid #000; }
+    </style>
+</head>
+<body>
+    <svg width="400" height="400" viewBox="0 0 400 400" xmlns="http://www.w3.org/2000/svg">
+  <!-- Chess board background -->
+  <rect width="400" height="400" fill="#f0d9b5"/>
+  
+  <!-- Dark squares -->
+  <rect x="50" y="50" width="50" height="50" fill="#b58863"/>
+  <rect x="150" y="50" width="50" height="50" fill="#b58863"/>
+  <rect x="250" y="50" width="50" height="50" fill="#b58863"/>
+  <rect x="350" y="50" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="0" y="100" width="50" height="50" fill="#b58863"/>
+  <rect x="100" y="100" width="50" height="50" fill="#b58863"/>
+  <rect x="200" y="100" width="50" height="50" fill="#b58863"/>
+  <rect x="300" y="100" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="50" y="150" width="50" height="50" fill="#b58863"/>
+  <rect x="150" y="150" width="50" height="50" fill="#b58863"/>
+  <rect x="250" y="150" width="50" height="50" fill="#b58863"/>
+  <rect x="350" y="150" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="0" y="200" width="50" height="50" fill="#b58863"/>
+  <rect x="100" y="200" width="50" height="50" fill="#b58863"/>
+  <rect x="200" y="200" width="50" height="50" fill="#b58863"/>
+  <rect x="300" y="200" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="50" y="250" width="50" height="50" fill="#b58863"/>
+  <rect x="150" y="250" width="50" height="50" fill="#b58863"/>
+  <rect x="250" y="250" width="50" height="50" fill="#b58863"/>
+  <rect x="350" y="250" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="0" y="300" width="50" height="50" fill="#b58863"/>
+  <rect x="100" y="300" width="50" height="50" fill="#b58863"/>
+  <rect x="200" y="300" width="50" height="50" fill="#b58863"/>
+  <rect x="300" y="300" width="50" height="50" fill="#b58863"/>
+  
+  <rect x="50" y="350" width="50" height="50" fill="#b58863"/>
+  <rect x="150" y="350" width="50" height="50" fill="#b58863"/>
+  <rect x="250" y="350" width="50" height="50" fill="#b58863"/>
+  <rect x="350" y="350" width="50" height="50" fill="#b58863"/>
+  
+  <!-- Board border -->
+  <rect x="0" y="0" width="400" height="400" fill="none" stroke="#000" stroke-width="2"/>
+  
+  <!-- Rank and file labels -->
+  <text x="25" y="25" font-family="Arial" font-size="12" fill="#000">8</text>
+  <text x="75" y="25" font-family="Arial" font-size="12" fill="#000">7</text>
+  <text x="125" y="25" font-family="Arial" font-size="12" fill="#000">6</text>
+  <text x="175" y="25" font-family="Arial" font-size="12" fill="#000">5</text>
+  <text x="225" y="25" font-family="Arial" font-size="12" fill="#000">4</text>
+  <text x="275" y="25" font-family="Arial" font-size="12" fill="#000">3</text>
+  <text x="325" y="25" font-family="Arial" font-size="12" fill="#000">2</text>
+  <text x="375" y="25" font-family="Arial" font-size="12" fill="#000">1</text>
+  
+  <text x="25" y="375" font-family="Arial" font-size="12" fill="#000">a</text>
+  <text x="75" y="375" font-family="Arial" font-size="12" fill="#000">b</text>
+  <text x="125" y="375" font-family="Arial" font-size="12" fill="#000">c</text>
+  <text x="175" y="375" font-family="Arial" font-size="12" fill="#000">d</text>
+  <text x="225" y="375" font-family="Arial" font-size="12" fill="#000">e</text>
+  <text x="275" y="375" font-family="Arial" font-size="12" fill="#000">f</text>
+  <text x="325" y="375" font-family="Arial" font-size="12" fill="#000">g</text>
+  <text x="375" y="375" font-family="Arial" font-size="12" fill="#000">h</text>
+  
+  <!-- Smothered Mate position -->
+  
+  <!-- Black King at g8 (surrounded by own pieces) -->
+  <text x="325" y="75" font-family="Arial" font-size="30" fill="#000" text-anchor="middle" dominant-baseline="middle">â™š</text>
+  
+  <!-- Black pieces surrounding the king -->
+  <text x="275" y="75" font-family="Arial" font-size="25" fill="#000" text-anchor="middle" dominant-baseline="middle">â™Ÿ</text>
+  <text x="375" y="75" font-family="Arial" font-size="25" fill="#000" text-anchor="middle" dominant-baseline="middle">â™Ÿ</text>
+  <text x="275" y="125" font-family="Arial" font-size="25" fill="#000" text-anchor="middle" dominant-baseline="middle">â™Ÿ</text>
+  <text x="375" y="125" font-family="Arial" font-size="25" fill="#000" text-anchor="middle" dominant-baseline="middle">â™Ÿ</text>
+  <text x="325" y="125" font-family="Arial" font-size="25" fill="#000" text-anchor="middle" dominant-baseline="middle">â™Ÿ</text>
+  
+  <!-- White Knight delivering checkmate -->
+  <text x="300" y="125" font-family="Arial" font-size="30" fill="#fff" text-anchor="middle" dominant-baseline="middle">â™˜</text>
+  
+  <!-- White Queen supporting -->
+  <text x="175" y="225" font-family="Arial" font-size="30" fill="#fff" text-anchor="middle" dominant-baseline="middle">â™•</text>
+  
+  <!-- Highlight the checkmate -->
+  <rect x="300" y="50" width="50" height="50" fill="none" stroke="#ff0000" stroke-width="3"/>
+  <text x="200" y="40" font-family="Arial" font-size="14" fill="#ff0000" font-weight="bold">SMOTHERED MATE</text>
+  
+  <!-- Show the knight's attack -->
+  <circle cx="300" cy="125" r="20" fill="none" stroke="#ff0000" stroke-width="2"/>
+</svg>
+
+</body>
+</html>

@@ -25,9 +25,13 @@
     "web": {
       "favicon": "./assets/applicationlogo.png"
     },
+    "cli": {
+      "appVersionSource": "remote"
+    },
+    "owner": "thiha1843",
     "extra": {
       "eas": {
-        "projectId": "6e59a073-d57f-4495-b599-7a811d417f69"
+        "projectId": "d9fe0eec-0634-4a87-a6c3-3bc1bae06b36"
       }
     }
   }

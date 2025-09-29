@@ -1,8 +1,32 @@
 {
   "build": {
+    "development": {
+      "developmentClient": true,
+      "distribution": "internal",
+      "android": {
+        "gradleCommand": ":app:assembleDebug",
+        "buildType": "apk"
+      }
+    },
+    "preview": {
+      "distribution": "internal",
+      "android": {
+        "buildType": "apk",
+        "gradleCommand": ":app:assembleRelease"
+      }
+    },
+    "production": {
+      "android": {
+        "buildType": "app-bundle"   
+      }
+    },
     "release": {
       "android": {
-        "buildType": "apk"
+        "buildType": "apk",        
+        "gradleCommand": ":app:assembleRelease",
+        "env": {
+          "EXPO_NO_DOTENV": "1"
+        }
       }
     }
   }

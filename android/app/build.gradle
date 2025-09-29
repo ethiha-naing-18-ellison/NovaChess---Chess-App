@@ -87,9 +87,9 @@ android {
     buildToolsVersion rootProject.ext.buildToolsVersion
     compileSdk rootProject.ext.compileSdkVersion
 
-    namespace 'com.thiha1843.lawgo'
+    namespace 'com.thiha1843.novachess'
     defaultConfig {
-        applicationId 'com.thiha1843.lawgo'
+        applicationId 'com.thiha1843.novachess'
         minSdkVersion rootProject.ext.minSdkVersion
         targetSdkVersion rootProject.ext.targetSdkVersion
         versionCode 1

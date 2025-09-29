@@ -7,9 +7,34 @@ import {
   TouchableOpacity,
   StyleSheet,
   Dimensions,
+  Image,
 } from 'react-native';
 
 const { width } = Dimensions.get('window');
+
+// Function to get image source based on filename
+const getImageSource = (imageName) => {
+  const imageMap = {
+    // Basic piece movement images
+    'chess-board.jpg': require('../../assets/basics-movepieces/chess-board.jpg'),
+    'pawn-move.jpg': require('../../assets/basics-movepieces/pawn-move.jpg'),
+    'rook-move.jpg': require('../../assets/basics-movepieces/rook-move.jpg'),
+    'knight-move.jpg': require('../../assets/basics-movepieces/knight-move.jpg'),
+    'bishop-move.jpg': require('../../assets/basics-movepieces/bishop-move.jpg'),
+    'queen-move.jpg': require('../../assets/basics-movepieces/queen-move.jpg'),
+    'king-move.jpg': require('../../assets/basics-movepieces/king-move.jpg'),
+    
+    // Checkmate pattern images
+    'checkmate-basic.jpg': require('../../assets/basics-checkmate/checkmate-basic.jpg'),
+    'back-rank-mate.jpg': require('../../assets/basics-checkmate/back-rank-mate.jpg'),
+    'scholars-mate.jpg': require('../../assets/basics-checkmate/scholars-mate.jpg'),
+    'fools-mate.jpg': require('../../assets/basics-checkmate/fools-mate.jpg'),
+    'smothered-mate.jpg': require('../../assets/basics-checkmate/smothered-mate.jpg'),
+    'anastasia-mate.jpg': require('../../assets/basics-checkmate/anastasia-mate.jpg'),
+  };
+  
+  return imageMap[imageName] || null;
+};
 
 export const LessonViewer = ({ lesson, onBack, onComplete }) => {
   const [currentSection, setCurrentSection] = useState(0);
@@ -70,11 +95,21 @@ export const LessonViewer = ({ lesson, onBack, onComplete }) => {
         <View style={styles.contentCard}>
           <Text style={styles.contentText}>{currentSectionData.content}</Text>
           
-          {/* Placeholder for chess board/diagram */}
-          <View style={styles.diagramPlaceholder}>
-            <Text style={styles.diagramText}>📊</Text>
-            <Text style={styles.diagramLabel}>Interactive Diagram</Text>
-            <Text style={styles.diagramSubtext}>{currentSectionData.image}</Text>
+          {/* Chess Movement Diagram */}
+          <View style={styles.diagramContainer}>
+            {getImageSource(currentSectionData.image) ? (
+              <Image
+                source={getImageSource(currentSectionData.image)}
+                style={styles.diagramImage}
+                resizeMode="contain"
+              />
+            ) : (
+              <View style={styles.imagePlaceholder}>
+                <Text style={styles.placeholderText}>📊</Text>
+                <Text style={styles.placeholderLabel}>Chess Diagram</Text>
+                <Text style={styles.placeholderSubtext}>{currentSectionData.image}</Text>
+              </View>
+            )}
           </View>
         </View>
 
@@ -203,26 +238,42 @@ const styles = StyleSheet.create({
     lineHeight: 24,
     marginBottom: 20,
   },
-  diagramPlaceholder: {
+  diagramContainer: {
     backgroundColor: '#2a2a3a',
-    borderRadius: 8,
-    padding: 30,
+    borderRadius: 12,
+    padding: 15,
     alignItems: 'center',
+    marginTop: 15,
+    borderWidth: 1,
+    borderColor: '#6b46c1',
+  },
+  diagramImage: {
+    width: width - 80,
+    height: 200,
+    borderRadius: 8,
+  },
+  imagePlaceholder: {
+    width: width - 80,
+    height: 200,
+    justifyContent: 'center',
+    alignItems: 'center',
+    backgroundColor: '#1a1a2e',
+    borderRadius: 8,
     borderWidth: 2,
     borderColor: '#6b46c1',
     borderStyle: 'dashed',
   },
-  diagramText: {
+  placeholderText: {
     fontSize: 48,
     marginBottom: 10,
   },
-  diagramLabel: {
+  placeholderLabel: {
     color: '#6b46c1',
     fontSize: 16,
     fontWeight: 'bold',
     marginBottom: 5,
   },
-  diagramSubtext: {
+  placeholderSubtext: {
     color: '#94a3b8',
     fontSize: 12,
     textAlign: 'center',

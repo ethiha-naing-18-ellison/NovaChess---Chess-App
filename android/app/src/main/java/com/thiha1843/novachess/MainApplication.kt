@@ -1,4 +1,4 @@
-package com.thiha1843.lawgo
+package com.thiha1843.novachess
 
 import android.app.Application
 import android.content.res.Configuration

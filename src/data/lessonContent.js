@@ -13,37 +13,37 @@ export const lessonContent = {
           {
             title: 'The Chess Board',
             content: 'The chess board has 64 squares arranged in 8x8 grid. Each square has a unique coordinate (like e4, d5). The board is positioned so that each player has a light square in the bottom-right corner.',
-            image: 'board_setup'
+            image: 'chess-board.jpg'
           },
           {
             title: 'Pawn Movement',
             content: 'Pawns move forward one square at a time, but can move two squares on their first move. They capture diagonally one square forward. Pawns cannot move backward.',
-            image: 'pawn_movement'
+            image: 'pawn-move.jpg'
           },
           {
             title: 'Rook Movement',
             content: 'Rooks move horizontally and vertically any number of squares. They cannot jump over other pieces. Rooks are powerful in open positions.',
-            image: 'rook_movement'
+            image: 'rook-move.jpg'
           },
           {
             title: 'Knight Movement',
             content: 'Knights move in an L-shape: two squares in one direction, then one square perpendicular. Knights are the only pieces that can jump over other pieces.',
-            image: 'knight_movement'
+            image: 'knight-move.jpg'
           },
           {
             title: 'Bishop Movement',
             content: 'Bishops move diagonally any number of squares. Each player starts with one light-squared bishop and one dark-squared bishop.',
-            image: 'bishop_movement'
+            image: 'bishop-move.jpg'
           },
           {
             title: 'Queen Movement',
             content: 'The queen combines the powers of rook and bishop. It can move horizontally, vertically, and diagonally any number of squares.',
-            image: 'queen_movement'
+            image: 'queen-move.jpg'
           },
           {
             title: 'King Movement',
             content: 'The king moves one square in any direction. The king cannot move into check. The game ends when the king is checkmated.',
-            image: 'king_movement'
+            image: 'king-move.jpg'
           }
         ]
       }
@@ -59,32 +59,32 @@ export const lessonContent = {
           {
             title: 'What is Checkmate?',
             content: 'Checkmate occurs when the king is in check and cannot escape. The game ends immediately when checkmate is achieved.',
-            image: 'checkmate_basic'
+            image: 'checkmate-basic.jpg'
           },
           {
             title: 'Back Rank Mate',
             content: 'A common checkmate pattern where the king is trapped on the back rank (first or eighth rank) by its own pawns and attacked by a rook or queen.',
-            image: 'back_rank_mate'
+            image: 'back-rank-mate.jpg'
           },
           {
             title: 'Scholar\'s Mate',
             content: 'A quick checkmate in 4 moves: 1.e4 e5 2.Qh5 Nc6 3.Bc4 Nf6 4.Qxf7#. This pattern attacks the f7 square with queen and bishop.',
-            image: 'scholars_mate'
+            image: 'scholars-mate.jpg'
           },
           {
             title: 'Fool\'s Mate',
             content: 'The fastest possible checkmate in chess: 1.f3 e5 2.g4 Qh4#. This occurs when White makes very poor opening moves.',
-            image: 'fools_mate'
+            image: 'fools-mate.jpg'
           },
           {
             title: 'Smothered Mate',
             content: 'A checkmate where the king is surrounded by its own pieces and cannot escape. Often delivered by a knight.',
-            image: 'smothered_mate'
+            image: 'smothered-mate.jpg'
           },
           {
             title: 'Anastasia\'s Mate',
             content: 'A checkmate pattern involving a rook and knight working together to trap the king in the corner.',
-            image: 'anastasia_mate'
+            image: 'anastasia-mate.jpg'
           }
         ]
       }
